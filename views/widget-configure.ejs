@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Configure <%= widget.name %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-white font-sans px-8 py-10">
+
+  <h1 class="text-3xl font-bold mb-8">Configure <%= widget.name %></h1>
+
+  <div class="grid grid-cols-2 gap-10">
+    <!-- Config Form -->
+    <form method="POST" action="/dashboard/widgets/<%= widget.id %>/save" class="space-y-6">
+      <% widget.configSchema.fields.forEach(field => { %>
+        <label class="block">
+          <span class="text-sm font-medium text-white"><%= field.label %></span>
+          <% if (field.type === 'text') { %>
+            <input type="text" name="<%= field.name %>" class="mt-1 block w-full bg-gray-800 text-white p-2 rounded" />
+          <% } else if (field.type === 'select') { %>
+            <select name="<%= field.name %>" class="mt-1 block w-full bg-gray-800 text-white p-2 rounded">
+              <% field.options.forEach(opt => { %>
+                <option value="<%= opt %>"><%= opt %></option>
+              <% }) %>
+            </select>
+          <% } %>
+        </label>
+      <% }) %>
+
+      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+        Save & Install
+      </button>
+    </form>
+
+    <!-- Live Preview -->
+    <div class="bg-gray-900 p-6 rounded-xl shadow-md border border-gray-800">
+      <h2 class="text-xl font-semibold mb-4">Live Preview</h2>
+      <iframe src="/dashboard/widgets/preview/<%= widget.id %>?t=<%= Date.now() %>" class="w-full h-96 bg-black rounded"></iframe>
+
+    </div>
+  </div>
+
+</body>
+</html>

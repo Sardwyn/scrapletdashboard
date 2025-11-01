@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Account Settings</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-white font-sans px-6 py-10">
+
+  <% if (query.saved === 'true') { %>
+    <div class="max-w-3xl mx-auto mb-6">
+      <div class="bg-green-700 text-white px-4 py-2 rounded shadow">
+        ✅ Profile saved successfully!
+      </div>
+    </div>
+  <% } %>
+
+  <div class="max-w-3xl mx-auto px-6 py-10 bg-gray-900 rounded-xl shadow-lg border border-gray-800">
+    <!-- Header with Return Button -->
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-bold text-white">Account Settings</h1>
+      <a href="/dashboard"
+         class="inline-block px-5 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium shadow transition">
+        ← Return to Dashboard
+      </a>
+    </div>
+  
+    <!-- Tabs -->
+    <div class="flex space-x-6 border-b border-gray-700 mb-8 pb-2 text-sm font-medium">
+      <a href="/account" class="text-blue-400 border-b-2 border-blue-400 pb-1">Bio</a>
+      <a href="/account/billing" class="text-gray-400 hover:text-blue-400">Billing</a>
+      <a href="/account/customize" class="text-gray-400 hover:text-blue-400">Customize</a>
+    </div>
+
+    <!-- Bio Form -->
+    <form action="/account/bio" method="POST" enctype="multipart/form-data" class="space-y-6">
+      <!-- Avatar Upload -->
+      <div>
+        <label class="block text-sm font-semibold mb-1 text-gray-300">Avatar</label>
+        <input type="file" name="avatar" class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
+      </div>
+
+      <!-- Display Name -->
+      <div>
+        <label class="block text-sm font-semibold mb-1 text-gray-300">Display Name</label>
+        <input type="text" name="display_name" value="<%= profile.display_name || '' %>" class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
+      </div>
+
+      <!-- Bio -->
+      <div>
+        <label class="block text-sm font-semibold mb-1 text-gray-300">Bio</label>
+        <textarea name="bio" rows="4" class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700"><%= profile.bio || '' %></textarea>
+      </div>
+
+      <!-- Social Links -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-gray-300">X (formerly Twitter)</label>
+          <div class="flex">
+            <span class="bg-gray-800 px-3 py-2 rounded-l border border-gray-700 text-gray-400">https://x.com/</span>
+            <input type="text" name="x" placeholder="username" value="<%= profile.x || '' %>" class="bg-gray-800 text-white p-2 rounded-r w-full border-t border-r border-b border-gray-700" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-gray-300">YouTube</label>
+          <input type="text" name="youtube" placeholder="YouTube URL" value="<%= profile.youtube || '' %>" class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-gray-300">Twitch</label>
+          <input type="text" name="twitch" placeholder="Twitch URL" value="<%= profile.twitch || '' %>" class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="pt-6">
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow">
+          Save Bio
+        </button>
+      </div>
+    </form>
+
+    <!-- Custom Buttons -->
+    <div class="mt-12">
+      <h2 class="text-xl font-bold mb-4 text-white">Custom Buttons</h2>
+      <p class="text-sm text-gray-400 mb-6">Add links to your store, portfolio, or anything else. Free tier allows 3 buttons. Pro users get unlimited.</p>
+
+      <!-- Add Button Form -->
+      <form method="POST" action="/account/buttons" class="space-y-4 mb-8">
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-gray-300">Button Label</label>
+          <input type="text" name="label" placeholder="e.g. Portfolio" required class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-gray-300">Destination URL</label>
+          <input type="url" name="url" placeholder="https://example.com" required class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow">
+            ➕ Add Button
+          </button>
+        </div>
+      </form>
+
+      <!-- Editable Button List -->
+      <div class="space-y-4">
+        <% customButtons.forEach(btn => { %>
+          <form method="POST" action="/account/buttons/<%= btn.id %>/update" class="space-y-2 bg-gray-800 p-4 rounded-lg border border-gray-700">
+            <div>
+              <label class="block text-sm font-semibold mb-1 text-gray-300">Label</label>
+              <input type="text" name="label" value="<%= btn.label %>" class="bg-gray-900 text-white p-2 rounded w-full border border-gray-600" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-1 text-gray-300">URL</label>
+              <input type="url" name="url" value="<%= btn.url %>" class="bg-gray-900 text-white p-2 rounded w-full border border-gray-600" />
+            </div>
+            <div class="flex justify-between items-center pt-2">
+              <button type="submit" class="text-blue-400 hover:underline text-sm">💾 Save</button>
+              <div class="flex space-x-3">
+                </form>
+                <form method="POST" action="/account/buttons/<%= btn.id %>/delete">
+                  <button class="text-red-400 hover:underline text-sm">Delete</button>
+                </form>
+              </div>
+            </div>
+          </form>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

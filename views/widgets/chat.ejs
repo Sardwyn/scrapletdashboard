@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Chat Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="<%= 
+  config.theme === 'neon' ? 'bg-pink-500 text-black' : 
+  config.theme === 'light' ? 'bg-white text-black' : 
+  'bg-gray-900 text-white' 
+%> p-4">
+  <h1 class="text-2xl font-bold mb-4">Live Chat Preview</h1>
+  <p>Theme: <%= config.theme %></p>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Onboard Your Profile</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+  <form action="/account/bio" method="POST" enctype="multipart/form-data" class="bg-gray-800 p-8 rounded-lg w-full max-w-md space-y-6">
+    <h1 class="text-2xl font-bold text-cyan-400">Welcome, Creator</h1>
+    <p class="text-sm text-gray-300">Let’s personalize your profile and make it shine.</p>
+
+    <!-- Hidden flag to distinguish onboarding -->
+    <input type="hidden" name="onboarding" value="true" />
+
+    <!-- Avatar Upload -->
+    <div>
+      <label class="block text-sm font-medium text-gray-200 mb-1">Avatar</label>
+      <input type="file" name="avatar" accept="image/*" class="w-full bg-gray-700 text-white rounded px-3 py-2" />
+    </div>
+
+    <!-- Display Name -->
+    <div>
+      <label class="block text-sm font-medium text-gray-200 mb-1">Display Name</label>
+      <input type="text" name="display_name" placeholder="Your creator name" class="w-full bg-gray-700 text-white rounded px-3 py-2" />
+    </div>
+
+    <!-- Bio -->
+    <div>
+      <label class="block text-sm font-medium text-gray-200 mb-1">Bio</label>
+      <textarea name="bio" rows="4" placeholder="Tell us about your vibe..." class="w-full bg-gray-700 text-white rounded px-3 py-2"></textarea>
+    </div>
+
+    <!-- Creator Tags -->
+    <div>
+      <label class="block text-sm font-medium text-gray-200 mb-1">Tags</label>
+      <input name="tags" placeholder="e.g. music, gaming, design" class="w-full bg-gray-700 text-white rounded px-3 py-2" />
+    </div>
+
+    <!-- Submit -->
+    <button type="submit" class="w-full bg-cyan-400 text-black font-semibold py-2 rounded hover:brightness-110 transition">
+      Finish Setup
+    </button>
+  </form>
+</body>
+</html>

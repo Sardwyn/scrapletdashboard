@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-950 text-white font-sans px-8 py-10 relative">
+
+  <!-- Top bar with logout -->
+  <div class="absolute top-6 right-8">
+    <form action="/auth/logout" method="POST">
+      <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow-md transition">
+        Log Out
+      </button>
+    </form>
+  </div>
+
+  <h1 class="text-4xl font-bold mb-10">Welcome, <%= user.username %></h1>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-3 gap-6 mb-12">
+    <!-- Overlays Card -->
+    <div class="bg-gray-900 p-6 rounded-xl shadow-md hover:shadow-lg transition border border-gray-800">
+      <h2 class="text-xl font-semibold mb-2">Overlays</h2>
+      <p class="text-gray-400 mb-2">
+        You have <%= overlays.filter(o => o.status === 'installed').length %> overlays installed.
+      </p>
+      <a href="/dashboard/overlays" class="text-blue-400 hover:underline">Manage Overlays →</a>
+    </div>
+
+    <!-- Widgets Card -->
+    <div class="bg-gray-900 p-6 rounded-xl shadow-md hover:shadow-lg transition border border-gray-800">
+      <h2 class="text-xl font-semibold mb-2">Widgets</h2>
+      <p class="text-gray-400 mb-2">
+        <%= widgets.filter(w => w.status === 'unlocked').length %> unlocked,
+        <%= widgets.filter(w => w.status === 'locked').length %> pending purchase.
+      </p>
+      <a href="/dashboard/widgets" class="text-blue-400 hover:underline">Manage Widgets →</a>
+    </div>
+
+    <!-- Account Card -->
+    <div class="bg-gray-900 p-6 rounded-xl shadow-md hover:shadow-lg transition border border-gray-800">
+      <h2 class="text-xl font-semibold mb-2">Account</h2>
+      <p class="text-gray-400 mb-2">Subscription: Creator Tier</p>
+      <a href="/account" class="text-blue-400 hover:underline">View Account →</a>
+    </div>
+  </div>
+
+  <!-- Public Profile Card -->
+  <div class="bg-gray-900 p-6 rounded-xl shadow-md hover:shadow-lg transition border border-gray-800 mb-12">
+    <h2 class="text-xl font-semibold mb-2">Your Public Profile</h2>
+    <p class="text-gray-400 mb-2">Share your creator page with fans, sponsors, and collaborators.</p>
+
+    <div class="flex items-center gap-3">
+      <input id="profileUrl" type="text" readonly value="<%= profileUrl %>"
+        class="bg-gray-800 text-blue-400 px-3 py-2 rounded w-full cursor-pointer"
+        onclick="copyProfileUrl()" />
+
+      <a href="/profile/configure"
+         class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition">
+        Configure
+      </a>
+
+      <button onclick="copyProfileUrl()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition">
+        Copy
+      </button>
+
+      <button onclick="toggleQR()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded shadow transition">
+        QR
+      </button>
+    </div>
+
+    <div id="qrContainer" class="mt-4 hidden">
+      <img id="qrCode" alt="QR Code for profile" class="w-32 h-32 border border-gray-700 rounded" />
+    </div>
+  </div>
+
+  <!-- Widget & Overlay Cards -->
+  <div class="grid grid-cols-2 gap-10">
+    <!-- Widgets Section -->
+    <div>
+      <h2 class="text-2xl font-bold mb-6 border-b border-gray-800 pb-2">Your Widgets</h2>
+      <ul class="space-y-4">
+        <% widgets.forEach(item => { %>
+          <li class="bg-gray-900 p-6 rounded-xl shadow-md hover:shadow-xl transition border border-gray-800 group">
+            <div class="flex justify-between items-center">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 flex items-center justify-center bg-gray-800 rounded-full text-2xl group-hover:scale-110 transition">
+                  <%= item.icon %>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-white group-hover:text-blue-400 transition">
+                    <%= item.name %>
+                  </h3>
+                  <p class="text-sm text-gray-400"><%= item.description %></p>
+                </div>
+              </div>
+              <% if (item.status === 'locked') { %>
+                <span class="bg-red-600 text-white text-xs px-3 py-1 rounded-full">Locked</span>
+              <% } else if (item.status === 'installed') { %>
+                <span class="bg-green-600 text-white text-xs px-3 py-1 rounded-full">Installed</span>
+              <% } else { %>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-1 rounded transition">
+                  Install
+                </button>
+              <% } %>
+            </div>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+
+    <!-- Overlays Section -->
+    <div>
+      <h2 class="text-2xl font-bold mb-6 border-b border-gray-800 pb-2">Your Overlays</h2>
+      <ul class="space-y-4">
+        <% overlays.forEach(item => { %>
+          <li class="bg-gray-900 p-6 rounded-xl shadow-md hover:shadow-xl transition border border-gray-800 group">
+            <div class="flex justify-between items-center">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 flex items-center justify-center bg-gray-800 rounded-full text-2xl group-hover:scale-110 transition">
+                  <%= item.icon %>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-white group-hover:text-blue-400 transition">
+                    <%= item.name %>
+                  </h3>
+                  <p class="text-sm text-gray-400"><%= item.description %></p>
+                </div>
+              </div>
+              <% if (item.status === 'locked') { %>
+                <span class="bg-red-600 text-white text-xs px-3 py-1 rounded-full">Locked</span>
+              <% } else if (item.status === 'installed') { %>
+                <span class="bg-green-600 text-white text-xs px-3 py-1 rounded-full">Installed</span>
+              <% } else { %>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-1 rounded transition">
+                  Install
+                </button>
+              <% } %>
+            </div>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    function copyProfileUrl() {
+      const input = document.getElementById('profileUrl');
+      navigator.clipboard.writeText(input.value);
+      alert('Profile URL copied!');
+    }
+
+    function toggleQR() {
+      const container = document.getElementById('qrContainer');
+      const img = document.getElementById('qrCode');
+      const input = document.getElementById('profileUrl');
+
+      container.classList.toggle('hidden');
+
+      if (!img.src) {
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(input.value)}`;
+      }
+    }
+  </script>
+
+</body>
+</html>
