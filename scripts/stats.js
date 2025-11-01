@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import db from '../db.js';
 import { getStatsFromPlatform } from './scrapers/index.js';
 
@@ -57,9 +56,15 @@ export async function getStatsForUser({ userId, youtube, twitch, kick, instagram
       const result = await getStatsFromPlatform(platform, handle);
 
       if (result) {
-        stats.followers[platform] = result.followers;
-        stats.engagement[platform] = result.engagement || 0;
-        stats.ccv[platform] = result.ccv || 0;
+        if (result.followers != null) {
+          stats.followers[platform] = Number(result.followers) || 0;
+        }
+        if (result.engagement != null) {
+          stats.engagement[platform] = Number(result.engagement) || 0;
+        }
+        if (result.ccv != null) {
+          stats.ccv[platform] = Number(result.ccv) || 0;
+        }
         stats.apiStatus[platform] = 'ok';
       } else {
         stats.apiStatus[platform] = 'fail';
@@ -115,10 +120,17 @@ export async function getStatsForUser({ userId, youtube, twitch, kick, instagram
 }
 
 
-export function gradeMarketability({ followers, ccv, engagement }) {
-  const reach = Object.values(followers).reduce((a, b) => a + b, 0);
-  const avgCCV = Object.values(ccv).reduce((a, b) => a + b, 0) / Object.keys(ccv).length || 0;
-  const avgEngagement = Object.values(engagement).reduce((a, b) => a + b, 0) / Object.keys(engagement).length || 0;
+export function gradeMarketability({ followers = {}, ccv = {}, engagement = {} }) {
+  const toNumber = value => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : 0;
+  };
+
+  const reach = Object.values(followers).reduce((total, value) => total + toNumber(value), 0);
+  const totalCCV = Object.values(ccv).reduce((total, value) => total + toNumber(value), 0);
+  const totalEngagement = Object.values(engagement).reduce((total, value) => total + toNumber(value), 0);
+  const avgCCV = Object.keys(ccv).length ? totalCCV / Object.keys(ccv).length : 0;
+  const avgEngagement = Object.keys(engagement).length ? totalEngagement / Object.keys(engagement).length : 0;
 
   const score = reach * 0.5 + avgCCV * 2 + avgEngagement * 100;
 

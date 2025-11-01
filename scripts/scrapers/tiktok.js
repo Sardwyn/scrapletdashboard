@@ -1,7 +1,4 @@
 export async function getStats(handle) {
-  return {
-    followers: 123456,
-    engagement: 0.03,
-    ccv: 89
-  };
+  console.warn(`[TODO] TikTok stats scraper not yet implemented for handle: ${handle}`);
+  return null;
 }

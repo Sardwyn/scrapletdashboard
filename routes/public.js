@@ -2,6 +2,7 @@ import express from 'express';
 import db from '../db.js';
 import validator from 'validator';
 import { getStatsForUser, gradeMarketability } from '../scripts/stats.js';
+import { ensureLayout } from '../utils/layout.js';
 
 const router = express.Router();
 
@@ -25,25 +26,6 @@ const platformMap = {
   'gog.com': 'gogdotcom',
   'epicgames.com': 'epic-games'
 };
-
-function ensureLayout(layout) {
-  if (!layout || typeof layout !== 'object') layout = {};
-  if (!Array.isArray(layout.sections)) {
-    layout.sections = [
-      { type: 'avatar', visible: true },
-      { type: 'bio', visible: true },
-      { type: 'socialLinks', visible: true },
-      { type: 'stats', visible: true },
-      { type: 'featuredWidget', visible: false },
-      { type: 'sponsorBanner', visible: false },
-      { type: 'customHtml', visible: false }
-    ];
-  }
-  if (!layout.theme) layout.theme = { color: 'dark', font: 'sans', layout: 'stacked' };
-  if (!Array.isArray(layout.order)) layout.order = ['avatar', 'bio', 'socialLinks', 'stats'];
-  if (typeof layout.showButtonIcons !== 'boolean') layout.showButtonIcons = true;
-  return layout;
-}
 
 function detectIcon(url) {
   if (!url) return null;
@@ -81,19 +63,22 @@ router.get('/u/:username', async (req, res) => {
       [user.id]
     );
 
-    const customButtons = buttonsResult.rows.map(btn => {
-      if (!btn.icon) {
-        const detected = detectIcon(btn.url);
-        if (detected) btn.icon = detected;
-      }
-      return btn;
-    });
+    const customButtons = buttonsResult.rows
+      .filter(btn => btn.visible !== false)
+      .map(btn => {
+        const button = { ...btn };
+        if (!button.icon) {
+          const detected = detectIcon(button.url);
+          if (detected) button.icon = detected;
+        }
+        return button;
+      });
 
     let stats = {};
     let marketability = 'F';
 
     try {
-      stats = await getStatsForUser({
+      const statsResult = await getStatsForUser({
         userId: user.id,
         youtube: user.youtube,
         twitch: user.twitch,
@@ -103,8 +88,8 @@ router.get('/u/:username', async (req, res) => {
         x: user.x,
         facebook: user.facebook
       });
-
-      marketability = gradeMarketability(stats);
+      marketability = statsResult.marketability ?? gradeMarketability(statsResult);
+      stats = { ...statsResult };
     } catch (statsErr) {
       console.warn('Stats fetch failed:', statsErr);
     }

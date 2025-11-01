@@ -7,7 +7,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 import dotenv from 'dotenv';
-import { Pool } from 'pg';
 import dashboardRoutes from './routes/dashboard.js';
 import session from 'express-session';
 import authRoutes from './routes/auth.js';
@@ -15,27 +14,22 @@ import accountRoutes from './routes/account.js';
 import publicRoutes from './routes/public.js';
 import profileRoutes from './routes/profile.js';
 import cors from 'cors'; // ✅ also make sure this is imported with `import`, not `require`
+import db from './db.js';
 
 dotenv.config({ path: path.join(__dirname, '.env') });
-
-console.log('DATABASE_URL:', process.env.DATABASE_URL);
 
 
 const app = express(); // ✅ must come before any `app.use(...)`
 const port = 3000;
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-pool.connect((err, client, release) => {
-  if (err) {
-    console.error('DB connection error:', err.stack);
-  } else {
+(async () => {
+  try {
+    await db.query('SELECT 1');
     console.log('Connected to PostgreSQL');
-    release();
+  } catch (error) {
+    console.error('DB connection error:', error);
   }
-});
+})();
 
 app.get('/test-icon', (req, res) => {
   res.send('<img src="/icons/github.svg" alt="GitHub Icon" />');
@@ -66,10 +60,19 @@ app.use(cors({
   credentials: true
 }));
 
+const sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret) {
+  console.warn('SESSION_SECRET is not set. Falling back to an insecure default.');
+}
+
 app.use(session({
-  secret: 'scrapelleto01!',
+  secret: sessionSecret || 'change-me',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production'
+  }
 }));
 
 app.use('/dashboard', dashboardRoutes);

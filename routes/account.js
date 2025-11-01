@@ -3,12 +3,21 @@ import multer from 'multer';
 import { join } from 'path';
 import db from '../db.js';
 import validator from 'validator';
+import { prepareUploadDirectory } from '../services/uploads.js';
 
 const router = express.Router();
 
-// Save uploads into a web‑safe directory outside /root
+const requestedUploadRoot = process.env.UPLOAD_DIR || '/var/www/scraplet-uploads';
+let uploadRoot = requestedUploadRoot;
+
+try {
+  uploadRoot = await prepareUploadDirectory(requestedUploadRoot);
+} catch (err) {
+  console.error('Failed to prepare upload directory:', requestedUploadRoot, err);
+}
+
 const upload = multer({
-  dest: join('/var/www/scraplet-uploads')
+  dest: join(uploadRoot)
 });
 
 function requireAuth(req, res, next) {
