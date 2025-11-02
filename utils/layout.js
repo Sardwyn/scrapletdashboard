@@ -102,3 +102,20 @@ export const layoutDefaults = {
   DEFAULT_THEME,
   DEFAULT_ORDER
 };
+
+
+export function buildVisibilityMap(layout) {
+  const visibility = {};
+
+  if (layout && Array.isArray(layout.sections)) {
+    layout.sections.forEach(section => {
+      if (section && typeof section.type === 'string') {
+        visibility[section.type] = coerceVisibility(section.visible) === true;
+      }
+    });
+  }
+
+  return visibility;
+}
+
+main

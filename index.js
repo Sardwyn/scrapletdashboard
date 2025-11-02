@@ -13,6 +13,7 @@ import authRoutes from './routes/auth.js';
 import accountRoutes from './routes/account.js';
 import publicRoutes from './routes/public.js';
 import profileRoutes from './routes/profile.js';
+import adminRoutes from './routes/admin.js';
 import cors from 'cors'; // ✅ also make sure this is imported with `import`, not `require`
 import db from './db.js';
 
@@ -80,6 +81,7 @@ app.use('/auth', authRoutes);
 app.use('/account', accountRoutes);
 app.use('/', publicRoutes);
 app.use('/profile', profileRoutes);
+app.use('/admin', adminRoutes);
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);

@@ -7,7 +7,10 @@
 </head>
 <body class="bg-gray-950 text-white font-sans px-6 py-10">
 
+  <% const visible = type => sectionVisibility && sectionVisibility[type] === true; %>
+
   <% const visible = type => layout?.sections?.some(section => section.type === type && section.visible === true); %>
+main
   <% const followerEntries = Object.entries((stats && stats.followers) || {}); %>
   <% const ccvEntries = Object.entries((stats && stats.ccv) || {}); %>
   <% const hasStatsData = followerEntries.length > 0 || ccvEntries.length > 0; %>

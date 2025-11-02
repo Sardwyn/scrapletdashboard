@@ -20,6 +20,10 @@ jest.unstable_mockModule('../../scripts/stats.js', () => ({
 }));
 
 const publicRoutes = (await import('../../routes/public.js')).default;
+grafana-dashbaord
+const { resetMetrics } = await import('../../utils/metrics.js');
+
+main
 
 function createApp() {
   const app = express();
@@ -32,6 +36,10 @@ function createApp() {
 
 describe('Public profile controller', () => {
   beforeEach(() => {
+
+    resetMetrics();
+
+main
     mockQuery.mockReset();
     mockGetStatsForUser.mockReset();
     mockGradeMarketability.mockReset();
