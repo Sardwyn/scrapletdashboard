@@ -3,12 +3,18 @@ import path from 'path';
 
 import { recordApiStatus } from '../utils/metrics.js';
 
-main
+
+
+import { recordApiStatus } from '../utils/metrics.js';
+
 
 const { promises: fsp, constants } = fs;
 
 export function ensureUploadDir(dirPath) {
   if (!dirPath || typeof dirPath !== 'string') {
+
+
+
 
     recordApiStatus({ service: 'uploads', status: 'error', detail: 'invalid_path' });
     throw new Error('Upload directory must be a non-empty string');
@@ -22,11 +28,13 @@ export function ensureUploadDir(dirPath) {
     throw error;
   }
 
+
+
     throw new Error('Upload directory must be a non-empty string');
   }
 
   fs.mkdirSync(dirPath, { recursive: true });
-main
+
   return dirPath;
 }
 
@@ -39,6 +47,9 @@ export async function verifyWritable(dirPath) {
     await fsp.writeFile(probe, 'probe');
     await fsp.unlink(probe);
 
+
+
+
     recordApiStatus({ service: 'uploads', status: 'success', detail: 'verify_writable' });
     return true;
   } catch (error) {
@@ -46,7 +57,7 @@ export async function verifyWritable(dirPath) {
 
     return true;
   } catch (error) {
-main
+
     return false;
   }
 }
@@ -56,16 +67,16 @@ export async function prepareUploadDirectory(dirPath) {
   const writable = await verifyWritable(resolved);
 
   if (!writable) {
-grafana-dashbaord
+
     recordApiStatus({ service: 'uploads', status: 'error', detail: 'not_writable' });
     throw new Error(`Upload directory is not writable: ${resolved}`);
   }
 
   recordApiStatus({ service: 'uploads', status: 'success', detail: 'prepare_directory' });
 
+
     throw new Error(`Upload directory is not writable: ${resolved}`);
   }
 
-main
   return resolved;
 }

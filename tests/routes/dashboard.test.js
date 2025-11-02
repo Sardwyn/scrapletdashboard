@@ -70,4 +70,21 @@ describe('dashboard metrics view', () => {
 
     delete process.env.ADMIN_METRICS_TOKEN;
   });
+
+
+  it('accepts trailing slashes on the metrics route', async () => {
+    recordScraperRun({ platform: 'kick', status: 'success' });
+
+    const response = await request(createApp({ id: 1, username: 'creator' })).get('/dashboard/metrics/');
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('Metrics Overview');
+  });
+
+  it('redirects invalid tabs back to the dashboard', async () => {
+    const response = await request(createApp({ id: 1, username: 'creator' })).get('/dashboard/unknown');
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe('/dashboard');
+  });
+
 });

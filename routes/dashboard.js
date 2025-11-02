@@ -3,16 +3,10 @@ import { widgets, overlays, getWidgetById } from '../utils/mockData.js';
 import db from '../db.js';
 import { getMetricsSnapshot } from '../utils/metrics.js';
 
-const router = express.Router();
+import requireAuth from '../utils/requireAuth.js';
 
-function requireAuth(req, res, next) {
-  if (!req.session?.user) {
-    console.debug('requireAuth: No session user found');
-    return res.redirect('/auth/login');
-  }
-  console.debug('requireAuth: Session user present:', req.session.user.id);
-  next();
-}
+
+const router = express.Router();
 
 // Main dashboard landing view
 router.get('/', requireAuth, (req, res) => {
@@ -30,6 +24,10 @@ router.get('/', requireAuth, (req, res) => {
   });
 });
 
+
+router.get(['/metrics', '/metrics/'], requireAuth, (req, res) => {
+  const metrics = getMetricsSnapshot();
+
 router.get('/metrics', requireAuth, (req, res) => {
   const metrics = getMetricsSnapshot();
 
@@ -45,14 +43,11 @@ router.get('/:tab', requireAuth, (req, res) => {
   const tab = req.params.tab;
   const validTabs = ['overlays', 'widgets', 'account'];
 
-  if (!validTabs.includes(tab)) {
-    console.debug(`Invalid tab requested: ${tab}`);
-    return res.redirect('/dashboard');
-  }
 
-  res.render('layout', {
-    tabView: `tabs/${tab}`,
-    user: req.session.user
+  res.render('dashboard-metrics', {
+    user: req.session.user,
+    metrics,
+    tokenConfigured: Boolean(process.env.ADMIN_METRICS_TOKEN)
   });
 });
 
@@ -96,6 +91,23 @@ router.get('/widgets/:id/configure', requireAuth, async (req, res) => {
     widget,
     user: req.session.user
   });
+});
+
+// Tab-specific views (keep last to avoid intercepting other routes)
+router.get(['/overlays', '/widgets', '/account'], requireAuth, (req, res) => {
+  const tab = req.path.slice(1);
+
+  res.render('layout', {
+    tabView: `tabs/${tab}`,
+    user: req.session.user
+  });
+});
+
+// Fallback for unknown tabs
+router.get('/:tab', requireAuth, (req, res) => {
+  const tab = req.params.tab;
+  console.debug(`Invalid tab requested: ${tab}`);
+  res.redirect('/dashboard');
 });
 
 // Public profile page

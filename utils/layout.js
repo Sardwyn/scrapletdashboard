@@ -118,4 +118,3 @@ export function buildVisibilityMap(layout) {
   return visibility;
 }
 
-main
