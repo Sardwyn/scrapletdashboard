@@ -1,45 +1,34 @@
 import express from 'express';
 import { widgets, overlays, getWidgetById } from '../utils/mockData.js';
-import db from '../db.js'; // ✅ Added missing import
+import db from '../db.js';
+import { getMetricsSnapshot } from '../utils/metrics.js';
+import requireAuth from '../utils/requireAuth.js';
 
 const router = express.Router();
 
-function requireAuth(req, res, next) {
-  if (!req.session?.user) {
-    console.debug('requireAuth: No session user found');
-    return res.redirect('/auth/login');
-  }
-  console.debug('requireAuth: Session user present:', req.session.user.id);
-  next();
-}
-
 // Main dashboard landing view
 router.get('/', requireAuth, (req, res) => {
-  const host = req.headers.host || 'scraplet.store';
-  const protocol = req.protocol || 'https';
-  const profileUrl = `${protocol}://${host}/u/${req.session.user.username}`; // ✅ Dynamic domain
+  const sessionUser = req.session.user;
+  const host = req.get('host') || 'scraplet.store';
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const protocol = forwardedProto?.split(',')[0] || req.protocol || 'https';
+  const profileUrl = `${protocol}://${host}/u/${sessionUser.username}`;
 
   res.render('dashboard', {
-    user: req.session.user,
+    user: sessionUser,
     widgets,
     overlays,
     profileUrl
   });
 });
 
-// Tab-specific views
-router.get('/:tab', requireAuth, (req, res) => {
-  const tab = req.params.tab;
-  const validTabs = ['overlays', 'widgets', 'account'];
+router.get(['/metrics', '/metrics/'], requireAuth, (req, res) => {
+  const metrics = getMetricsSnapshot();
 
-  if (!validTabs.includes(tab)) {
-    console.debug(`Invalid tab requested: ${tab}`);
-    return res.redirect('/dashboard');
-  }
-
-  res.render('layout', {
-    tabView: `tabs/${tab}`,
-    user: req.session.user
+  res.render('dashboard-metrics', {
+    user: req.session.user,
+    metrics,
+    tokenConfigured: Boolean(process.env.ADMIN_METRICS_TOKEN)
   });
 });
 
@@ -83,6 +72,23 @@ router.get('/widgets/:id/configure', requireAuth, async (req, res) => {
     widget,
     user: req.session.user
   });
+});
+
+// Tab-specific views (keep last to avoid intercepting other routes)
+router.get(['/overlays', '/widgets', '/account'], requireAuth, (req, res) => {
+  const tab = req.path.slice(1);
+
+  res.render('layout', {
+    tabView: `tabs/${tab}`,
+    user: req.session.user
+  });
+});
+
+// Fallback for unknown tabs
+router.get('/:tab', requireAuth, (req, res) => {
+  const tab = req.params.tab;
+  console.debug(`Invalid tab requested: ${tab}`);
+  res.redirect('/dashboard');
 });
 
 // Public profile page

@@ -4,6 +4,7 @@ import * as twitch from './twitch.js';
 import * as x from './x.js';
 import * as instagram from './instagram.js';
 import * as tiktok from './tiktok.js';
+import * as facebook from './facebook.js';
 
 const map = {
   youtube,
@@ -11,7 +12,8 @@ const map = {
   twitch,
   x,
   instagram,
-  tiktok
+  tiktok,
+  facebook
 };
 
 export async function getStatsFromPlatform(platform, handle) {

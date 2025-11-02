@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Metrics Overview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-white font-sans px-8 py-10">
+  <div class="flex items-center justify-between mb-10">
+    <div>
+      <h1 class="text-4xl font-bold">Metrics Overview</h1>
+      <p class="text-gray-400 mt-2">Realtime insight into scraper health, API status, layout visibility, and platform activity.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="/dashboard" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded shadow transition">Back to Dashboard</a>
+      <form action="/auth/logout" method="POST">
+        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow transition">Log Out</button>
+      </form>
+    </div>
+  </div>
+
+  <% 
+    function formatTimestamp(ms) {
+      if (!ms) return '—';
+      try {
+        return new Date(ms).toLocaleString();
+      } catch (err) {
+        return String(ms);
+      }
+    }
+
+    function formatCount(value) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return '0';
+      return num.toLocaleString();
+    }
+
+    const scrapers = (metrics && metrics.scrapers) ? metrics.scrapers : [];
+    const followers = (metrics && metrics.followers) ? metrics.followers : [];
+    const apiEvents = (metrics && metrics.api) ? metrics.api : [];
+    const tests = (metrics && metrics.tests) ? metrics.tests : { passed: 0, failed: 0, lastRun: null };
+    const layout = (metrics && metrics.layout) ? metrics.layout : [];
+    const activity = (metrics && metrics.activity) ? metrics.activity : { requestsTotal: 0, viewsTotal: 0, lastRequest: null, byUser: [] };
+  %>
+
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+    <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow">
+      <p class="text-sm text-gray-400">Scraper Success</p>
+      <p class="text-3xl font-semibold mt-2"><%= formatCount(scrapers.reduce((sum, item) => sum + (item.success || 0), 0)) %></p>
+    </div>
+    <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow">
+      <p class="text-sm text-gray-400">Scraper Failures</p>
+      <p class="text-3xl font-semibold mt-2 text-red-400"><%= formatCount(scrapers.reduce((sum, item) => sum + (item.failure || 0), 0)) %></p>
+    </div>
+    <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow">
+      <p class="text-sm text-gray-400">Recorded Profiles</p>
+      <p class="text-3xl font-semibold mt-2"><%= formatCount(activity.viewsTotal || 0) %></p>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-2xl font-bold">Scraper Health</h2>
+      <p class="text-sm text-gray-500">Tracking recent success and failure counts per platform.</p>
+    </div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <table class="min-w-full divide-y divide-gray-800">
+        <thead class="bg-gray-800 text-gray-300 text-sm uppercase tracking-wide">
+          <tr>
+            <th class="px-4 py-3 text-left">Platform</th>
+            <th class="px-4 py-3 text-left">Success</th>
+            <th class="px-4 py-3 text-left">Failures</th>
+            <th class="px-4 py-3 text-left">Last Success</th>
+            <th class="px-4 py-3 text-left">Last Failure</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800 text-sm">
+          <% if (!scrapers.length) { %>
+            <tr>
+              <td colspan="5" class="px-4 py-4 text-center text-gray-500">No scraper activity recorded yet.</td>
+            </tr>
+          <% } %>
+          <% scrapers.forEach(item => { %>
+            <tr>
+              <td class="px-4 py-3 font-medium text-white"><%= item.platform %></td>
+              <td class="px-4 py-3"><%= formatCount(item.success) %></td>
+              <td class="px-4 py-3 text-red-400"><%= formatCount(item.failure) %></td>
+              <td class="px-4 py-3 text-gray-400"><%= formatTimestamp(item.lastSuccess) %></td>
+              <td class="px-4 py-3 text-gray-400"><%= formatTimestamp(item.lastFailure) %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-2xl font-bold">Follower Snapshots</h2>
+      <p class="text-sm text-gray-500">Latest follower, CCV, and engagement data per user/platform.</p>
+    </div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <table class="min-w-full divide-y divide-gray-800">
+        <thead class="bg-gray-800 text-gray-300 text-sm uppercase tracking-wide">
+          <tr>
+            <th class="px-4 py-3 text-left">User ID</th>
+            <th class="px-4 py-3 text-left">Platform</th>
+            <th class="px-4 py-3 text-left">Followers</th>
+            <th class="px-4 py-3 text-left">Avg CCV</th>
+            <th class="px-4 py-3 text-left">Engagement</th>
+            <th class="px-4 py-3 text-left">Timestamp</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800 text-sm">
+          <% if (!followers.length) { %>
+            <tr>
+              <td colspan="6" class="px-4 py-4 text-center text-gray-500">No follower data recorded yet.</td>
+            </tr>
+          <% } %>
+          <% followers.forEach(item => { %>
+            <tr>
+              <td class="px-4 py-3 font-medium text-white"><%= item.userId %></td>
+              <td class="px-4 py-3"><%= item.platform %></td>
+              <td class="px-4 py-3"><%= formatCount(item.followers) %></td>
+              <td class="px-4 py-3"><%= formatCount(item.ccv) %></td>
+              <td class="px-4 py-3"><%= formatCount(item.engagement) %></td>
+              <td class="px-4 py-3 text-gray-400"><%= formatTimestamp(item.timestamp) %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mb-12 grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <h2 class="text-2xl font-bold mb-4">API Events</h2>
+      <p class="text-sm text-gray-500 mb-6">Aggregated status events grouped by service, status, and platform.</p>
+      <div class="space-y-4 max-h-80 overflow-y-auto pr-2">
+        <% if (!apiEvents.length) { %>
+          <p class="text-gray-500">No API events recorded yet.</p>
+        <% } %>
+        <% apiEvents.forEach(event => { %>
+          <div class="bg-gray-800/60 border border-gray-700 rounded-lg p-4">
+            <div class="flex justify-between">
+              <span class="font-semibold text-white"><%= event.service %></span>
+              <span class="text-sm px-2 py-1 rounded-full <%= event.status === 'success' ? 'bg-green-600/40 text-green-300' : 'bg-red-600/30 text-red-200' %>"><%= event.status %></span>
+            </div>
+            <p class="text-xs text-gray-400 mt-2 uppercase tracking-wide">Platform: <%= event.platform || 'n/a' %></p>
+            <p class="text-sm text-gray-300 mt-2">Occurrences: <span class="font-semibold"><%= formatCount(event.count) %></span></p>
+            <p class="text-xs text-gray-500 mt-1">Detail: <%= event.detail %></p>
+            <p class="text-xs text-gray-500 mt-1">Last event: <%= formatTimestamp(event.lastOccurrence) %></p>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <h2 class="text-2xl font-bold mb-4">Test Suite</h2>
+      <p class="text-sm text-gray-500 mb-6">Latest Jest run results captured for Grafana.</p>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-gray-800/60 border border-gray-700 rounded-lg p-4 text-center">
+          <p class="text-sm text-gray-400">Passed</p>
+          <p class="text-2xl font-semibold text-green-300 mt-2"><%= formatCount(tests.passed) %></p>
+        </div>
+        <div class="bg-gray-800/60 border border-gray-700 rounded-lg p-4 text-center">
+          <p class="text-sm text-gray-400">Failed</p>
+          <p class="text-2xl font-semibold text-red-300 mt-2"><%= formatCount(tests.failed) %></p>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500 mt-4">Last run: <%= formatTimestamp(tests.lastRun) %></p>
+    </div>
+  </section>
+
+  <section class="mb-12 grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <h2 class="text-2xl font-bold mb-4">Layout Visibility</h2>
+      <p class="text-sm text-gray-500 mb-6">Current toggle state for public profile sections.</p>
+      <div class="space-y-4 max-h-80 overflow-y-auto pr-2">
+        <% if (!layout.length) { %>
+          <p class="text-gray-500">No layout data recorded yet.</p>
+        <% } %>
+        <% layout.forEach(entry => { %>
+          <div class="bg-gray-800/60 border border-gray-700 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-white">User <%= entry.userId %></span>
+              <span class="text-xs text-gray-400">Updated <%= formatTimestamp(entry.updatedAt) %></span>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Button icons: <%= entry.showButtonIcons ? 'Enabled' : 'Disabled' %></p>
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <% Object.entries(entry.visibility || {}).forEach(([section, visible]) => { %>
+                <div class="bg-gray-900/70 border border-gray-700 rounded px-3 py-2 flex items-center justify-between">
+                  <span class="text-sm text-gray-300"><%= section %></span>
+                  <span class="text-xs px-2 py-1 rounded-full <%= visible ? 'bg-green-600/30 text-green-200' : 'bg-red-600/30 text-red-200' %>"><%= visible ? 'Visible' : 'Hidden' %></span>
+                </div>
+              <% }); %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <h2 class="text-2xl font-bold mb-4">Profile Activity</h2>
+      <p class="text-sm text-gray-500 mb-6">Recent profile request volume and view counts.</p>
+      <div class="space-y-2">
+        <p class="text-sm text-gray-300">Total Requests: <span class="font-semibold"><%= formatCount(activity.requestsTotal) %></span></p>
+        <p class="text-sm text-gray-300">Total Views: <span class="font-semibold"><%= formatCount(activity.viewsTotal) %></span></p>
+        <p class="text-xs text-gray-500">Last Request: <%= formatTimestamp(activity.lastRequest) %></p>
+      </div>
+      <div class="mt-6">
+        <h3 class="text-lg font-semibold mb-3">By User</h3>
+        <div class="space-y-4 max-h-72 overflow-y-auto pr-2">
+          <% if (!activity.byUser?.length) { %>
+            <p class="text-gray-500">No profile views recorded yet.</p>
+          <% } %>
+          <% activity.byUser?.forEach(user => { %>
+            <div class="bg-gray-800/60 border border-gray-700 rounded-lg p-4">
+              <div class="flex items-center justify-between">
+                <span class="font-semibold text-white"><%= user.username || `User ${user.userId}` %></span>
+                <span class="text-xs text-gray-400">Last view: <%= formatTimestamp(user.lastView) %></span>
+              </div>
+              <p class="text-sm text-gray-300 mt-2">Views: <span class="font-semibold"><%= formatCount(user.views) %></span></p>
+              <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-400">
+                <% Object.entries(user.statuses || {}).forEach(([status, count]) => { %>
+                  <div class="bg-gray-900/70 border border-gray-800 rounded px-3 py-2 flex items-center justify-between">
+                    <span class="uppercase tracking-wide"><%= status %></span>
+                    <span class="font-semibold"><%= formatCount(count) %></span>
+                  </div>
+                <% }); %>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-2xl font-bold">Prometheus Export</h2>
+        <p class="text-sm text-gray-500">Directly accessible from <code class="bg-gray-800 px-1.5 py-0.5 rounded">/admin/metrics</code> for Grafana scraping.</p>
+        <% if (!tokenConfigured) { %>
+          <p class="text-xs text-red-400 mt-2">ADMIN_METRICS_TOKEN is not configured. Set this environment variable to secure the metrics endpoint.</p>
+        <% } else { %>
+          <p class="text-xs text-gray-400 mt-2">Remember to include the <code class="bg-gray-800 px-1 py-0.5 rounded">x-admin-token</code> header when scraping.</p>
+        <% } %>
+      </div>
+      <a href="/admin/metrics" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition" target="_blank" rel="noopener noreferrer">Open Raw Metrics</a>
+    </div>
+    <pre class="bg-gray-950 border border-gray-800 rounded-lg p-4 text-sm text-gray-300 overflow-x-auto whitespace-pre-wrap">Scrapers: <%= scrapers.length %> · Followers: <%= followers.length %> · API Events: <%= apiEvents.length %></pre>
+  </section>
+</body>
+</html>
