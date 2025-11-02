@@ -9,6 +9,7 @@
 </head>
 <body class="<%= layout.theme.color === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900' %>">
 
+
   <%
     let providedVisibility;
     try {
@@ -32,6 +33,31 @@
   %>
 
   <div class="max-w-4xl mx-auto py-10 px-6">
+
+  <%
+    let providedVisibility;
+    try {
+      providedVisibility = sectionVisibility;
+    } catch (err) {
+      providedVisibility = undefined;
+    }
+
+    const fallbackVisibility = Array.isArray(layout?.sections)
+      ? layout.sections.reduce((acc, section) => {
+          if (section && typeof section.type === 'string') {
+            acc[section.type] = section.visible === true;
+          }
+          return acc;
+        }, {})
+      : {};
+
+    const visibilityMap = (providedVisibility && typeof providedVisibility === 'object')
+      ? providedVisibility
+      : fallbackVisibility;
+  %>
+
+  <div class="max-w-4xl mx-auto py-10 px-6">
+
     <h1 class="text-3xl font-bold mb-8">Configure Profile Layout</h1>
 
     <form method="POST" action="/profile/configure" class="space-y-8">
@@ -40,12 +66,34 @@
       <div>
         <h2 class="text-xl font-semibold mb-4">Profile Sections</h2>
         <div class="space-y-2">
+
           <% ['avatar', 'bio', 'socialLinks', 'stats'].forEach(type => { %>
             <label class="flex items-center space-x-3">
               <input type="checkbox" name="<%= type %>" <%= visibilityMap[type] === true ? 'checked' : '' %> class="accent-indigo-500" />
               <span class="text-sm font-medium capitalize">Show <%= type %></span>
             </label>
           <% }) %>
+
+
+          <% ['avatar', 'bio', 'socialLinks', 'stats'].forEach(type => { %>
+            <label class="flex items-center space-x-3">
+              <input type="checkbox" name="<%= type %>" <%= visibilityMap[type] === true ? 'checked' : '' %> class="accent-indigo-500" />
+              <span class="text-sm font-medium capitalize">Show <%= type %></span>
+            </label>
+          <% }) %>
+
+          <% ['avatar', 'bio', 'socialLinks', 'stats'].forEach(type => { %>
+            <label class="flex items-center space-x-3">
+
+              <input type="checkbox" name="<%= type %>" <%= sectionVisibility && sectionVisibility[type] === true ? 'checked' : '' %> class="accent-indigo-500" />
+
+              <input type="checkbox" name="<%= type %>" <%= layout.sections?.some(section => section.type === type && section.visible === true) ? 'checked' : '' %> class="accent-indigo-500" />
+
+              <span class="text-sm font-medium capitalize">Show <%= type %></span>
+            </label>
+          <% }) %>
+
+
         </div>
       </div>
 

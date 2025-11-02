@@ -71,6 +71,7 @@ describe('dashboard metrics view', () => {
     delete process.env.ADMIN_METRICS_TOKEN;
   });
 
+
   it('accepts trailing slashes on the metrics route', async () => {
     recordScraperRun({ platform: 'kick', status: 'success' });
 
@@ -85,4 +86,5 @@ describe('dashboard metrics view', () => {
     expect(response.status).toBe(302);
     expect(response.headers.location).toBe('/dashboard');
   });
+
 });
