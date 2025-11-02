@@ -2,7 +2,9 @@ import express from 'express';
 import { widgets, overlays, getWidgetById } from '../utils/mockData.js';
 import db from '../db.js';
 import { getMetricsSnapshot } from '../utils/metrics.js';
+
 import requireAuth from '../utils/requireAuth.js';
+
 
 const router = express.Router();
 
@@ -22,8 +24,25 @@ router.get('/', requireAuth, (req, res) => {
   });
 });
 
+
 router.get(['/metrics', '/metrics/'], requireAuth, (req, res) => {
   const metrics = getMetricsSnapshot();
+
+router.get('/metrics', requireAuth, (req, res) => {
+  const metrics = getMetricsSnapshot();
+
+  res.render('dashboard-metrics', {
+    user: req.session.user,
+    metrics,
+    tokenConfigured: Boolean(process.env.ADMIN_METRICS_TOKEN)
+  });
+});
+
+// Tab-specific views
+router.get('/:tab', requireAuth, (req, res) => {
+  const tab = req.params.tab;
+  const validTabs = ['overlays', 'widgets', 'account'];
+
 
   res.render('dashboard-metrics', {
     user: req.session.user,
