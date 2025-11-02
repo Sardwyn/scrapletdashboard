@@ -7,7 +7,11 @@
 </head>
 <body class="bg-gray-950 text-white font-sans px-6 py-10">
 
-  <% const visible = type => layout?.sections.find(s => s.type === type)?.visible %>
+  <% const visible = type => sectionVisibility && sectionVisibility[type] === true; %>
+  <% const followerEntries = Object.entries((stats && stats.followers) || {}); %>
+  <% const ccvEntries = Object.entries((stats && stats.ccv) || {}); %>
+  <% const hasStatsData = followerEntries.length > 0 || ccvEntries.length > 0; %>
+  <% const formatCount = value => { const numeric = Number(value); return Number.isFinite(numeric) ? numeric.toLocaleString() : (value ?? '0'); }; %>
 
   <div class="max-w-2xl mx-auto bg-gray-900 p-8 rounded-xl shadow-lg border border-gray-800">
 
@@ -32,47 +36,49 @@
     <% } %>
 
     <!-- Stats -->
-   <% if (stats && Object.keys(stats.followers).length) { %>
-  <div class="bg-gray-900 p-6 rounded-lg mt-6 shadow-md border border-gray-800">
-    <h3 class="text-xl font-bold mb-4 text-indigo-300">📊 Reach & Engagement</h3>
-    <div class="space-y-4 text-sm text-white">
+    <% if (visible('stats')) { %>
+      <% if (hasStatsData) { %>
+        <div class="bg-gray-900 p-6 rounded-lg mt-6 shadow-md border border-gray-800">
+          <h3 class="text-xl font-bold mb-4 text-indigo-300">📊 Reach & Engagement</h3>
+          <div class="space-y-4 text-sm text-white">
 
-      <% Object.entries(stats.followers).forEach(([platform, count]) => { %>
-        <div class="flex items-center justify-between border-b border-gray-800 pb-2">
-          <div class="flex items-center gap-2">
-            <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
-            <span class="capitalize"><%= platform %> followers</span>
+            <% followerEntries.forEach(([platform, count]) => { %>
+              <div class="flex items-center justify-between border-b border-gray-800 pb-2">
+                <div class="flex items-center gap-2">
+                  <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
+                  <span class="capitalize"><%= platform %> followers</span>
+                </div>
+                <span class="font-semibold"><%= formatCount(count) %></span>
+
+              </div>
+            <% }) %>
+
+            <% ccvEntries.forEach(([platform, count]) => { %>
+              <div class="flex items-center justify-between border-b border-gray-800 pb-2">
+                <div class="flex items-center gap-2">
+                  <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
+                  <span class="capitalize"><%= platform %> CCV</span>
+                </div>
+                <span class="font-semibold"><%= formatCount(count) %></span>
+              </div>
+            <% }) %>
+
+            <% if (marketability) { %>
+              <div class="flex justify-between pt-2 text-indigo-400 font-bold">
+                <span>Marketability Grade</span>
+                <span><%= marketability %></span>
+              </div>
+            <% } %>
+
+            <% if (stats && stats.last_updated) { %>
+              <p class="text-xs text-gray-500 mt-2">Last updated: <%= new Date(stats.last_updated).toLocaleString() %></p>
+            <% } %>
           </div>
-          <span class="font-semibold"><%= count ? count.toLocaleString() : '0' %></span>
-
         </div>
-      <% }) %>
-
-      <% Object.entries(stats.ccv).forEach(([platform, count]) => { %>
-        <div class="flex items-center justify-between border-b border-gray-800 pb-2">
-          <div class="flex items-center gap-2">
-            <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
-            <span class="capitalize"><%= platform %> CCV</span>
-          </div>
-          <span class="font-semibold"><%= count.toLocaleString() %></span>
-        </div>
-      <% }) %>
-
-      <% if (marketability) { %>
-        <div class="flex justify-between pt-2 text-indigo-400 font-bold">
-          <span>Marketability Grade</span>
-          <span><%= marketability %></span>
-        </div>
+      <% } else { %>
+        <p class="text-sm text-red-400 mt-4">⚠️ Stats unavailable — API may be down or not linked.</p>
       <% } %>
-
-      <% if (stats.last_updated) { %>
-        <p class="text-xs text-gray-500 mt-2">Last updated: <%= new Date(stats.last_updated).toLocaleString() %></p>
-      <% } %>
-    </div>
-  </div>
-<% } else { %>
-  <p class="text-sm text-red-400 mt-4">⚠️ Stats unavailable — API may be down or not linked.</p>
-<% } %>
+    <% } %>
 
 
 

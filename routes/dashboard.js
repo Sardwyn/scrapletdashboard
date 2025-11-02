@@ -1,6 +1,7 @@
 import express from 'express';
 import { widgets, overlays, getWidgetById } from '../utils/mockData.js';
-import db from '../db.js'; // ✅ Added missing import
+import db from '../db.js';
+import { getMetricsSnapshot } from '../utils/metrics.js';
 
 const router = express.Router();
 
@@ -15,15 +16,27 @@ function requireAuth(req, res, next) {
 
 // Main dashboard landing view
 router.get('/', requireAuth, (req, res) => {
-  const host = req.headers.host || 'scraplet.store';
-  const protocol = req.protocol || 'https';
-  const profileUrl = `${protocol}://${host}/u/${req.session.user.username}`; // ✅ Dynamic domain
+  const sessionUser = req.session.user;
+  const host = req.get('host') || 'scraplet.store';
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const protocol = forwardedProto?.split(',')[0] || req.protocol || 'https';
+  const profileUrl = `${protocol}://${host}/u/${sessionUser.username}`;
 
   res.render('dashboard', {
-    user: req.session.user,
+    user: sessionUser,
     widgets,
     overlays,
     profileUrl
+  });
+});
+
+router.get('/metrics', requireAuth, (req, res) => {
+  const metrics = getMetricsSnapshot();
+
+  res.render('dashboard-metrics', {
+    user: req.session.user,
+    metrics,
+    tokenConfigured: Boolean(process.env.ADMIN_METRICS_TOKEN)
   });
 });
 
