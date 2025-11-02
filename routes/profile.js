@@ -8,6 +8,16 @@ import { recordLayoutState } from '../utils/metrics.js';
 const router = express.Router();
 
 
+import express from 'express';
+import db from '../db.js';
+import requireAuth from '../utils/requireAuth.js';
+import { ensureLayout, layoutDefaults, buildVisibilityMap } from '../utils/layout.js';
+import { recordLayoutState } from '../utils/metrics.js';
+
+const router = express.Router();
+
+
+
 
 // Icon inference helper
 function inferIcon(label = '', url = '') {
@@ -39,9 +49,15 @@ router.get('/configure', requireAuth, async (req, res) => {
     recordLayoutState({ userId, layout });
     const sectionVisibility = buildVisibilityMap(layout);
 
+
     let layout = ensureLayout(result.rows[0]?.layout || {});
     recordLayoutState({ userId, layout });
     const sectionVisibility = buildVisibilityMap(layout);
+
+    let layout = ensureLayout(result.rows[0]?.layout || {});
+    recordLayoutState({ userId, layout });
+    const sectionVisibility = buildVisibilityMap(layout);
+
 
 
     const buttonsResult = await db.query(
@@ -50,6 +66,13 @@ router.get('/configure', requireAuth, async (req, res) => {
     );
     const customButtons = buttonsResult.rows;
 
+    res.render('profile-configure', {
+      user: req.session.user,
+      layout,
+      sectionVisibility,
+      customButtons
+    });
+
 
     res.render('profile-configure', {
       user: req.session.user,
@@ -64,6 +87,7 @@ router.get('/configure', requireAuth, async (req, res) => {
       sectionVisibility,
       customButtons
     });
+
 
   } catch (err) {
     console.error('Error loading profile layout:', err);
@@ -93,6 +117,7 @@ router.post('/configure', requireAuth, async (req, res) => {
   });
   recordLayoutState({ userId, layout });
 
+
   let layout = ensureLayout({
     sections: [
       { type: 'avatar', visible: !!req.body.avatar },
@@ -105,6 +130,20 @@ router.post('/configure', requireAuth, async (req, res) => {
     showButtonIcons: req.body.showButtonIcons === 'on'
   });
   recordLayoutState({ userId, layout });
+
+  let layout = ensureLayout({
+    sections: [
+      { type: 'avatar', visible: !!req.body.avatar },
+      { type: 'bio', visible: !!req.body.bio },
+      { type: 'socialLinks', visible: !!req.body.socialLinks },
+      { type: 'stats', visible: !!req.body.stats }
+    ],
+    theme: layoutDefaults.DEFAULT_THEME,
+    order: Array.isArray(req.body.order) ? req.body.order : layoutDefaults.DEFAULT_ORDER,
+    showButtonIcons: req.body.showButtonIcons === 'on'
+  });
+  recordLayoutState({ userId, layout });
+
 
 
   try {
@@ -160,8 +199,13 @@ router.post('/configure', requireAuth, async (req, res) => {
     res.redirect('/dashboard');
   } catch (err) {
 
+
+    res.redirect('/dashboard');
+  } catch (err) {
+
     res.redirect('/dashboard');␊
   } catch (err) {␊
+
 
     console.error('Error saving profile layout:', err);
     res.status(500).send('Failed to save layout');

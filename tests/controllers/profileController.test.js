@@ -28,6 +28,11 @@ const { resetMetrics } = await import('../../utils/metrics.js');
 const { resetMetrics } = await import('../../utils/metrics.js');
 
 
+
+const { resetMetrics } = await import('../../utils/metrics.js');
+
+
+
 function createApp() {
   const app = express();
   app.engine('ejs', ejs.__express);
@@ -44,6 +49,10 @@ describe('Public profile controller', () => {
 
 
     resetMetrics();
+
+
+    resetMetrics();
+
 
     mockQuery.mockReset();
     mockGetStatsForUser.mockReset();
