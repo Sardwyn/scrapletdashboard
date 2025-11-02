@@ -2,8 +2,12 @@ import express from 'express';
 import db from '../db.js';
 import validator from 'validator';
 import { getStatsForUser, gradeMarketability } from '../scripts/stats.js';
+
 import { ensureLayout, buildVisibilityMap } from '../utils/layout.js';
 import { recordProfileRequest, recordLayoutState } from '../utils/metrics.js';
+
+import { ensureLayout } from '../utils/layout.js';
+
 
 const router = express.Router();
 
@@ -49,6 +53,7 @@ router.get('/u/:username', async (req, res) => {
     );
 
     const user = userResult.rows[0];
+grafana-dashbaord
     if (!user) {
       recordProfileRequest({ username, status: 'not_found' });
       console.debug('User not found:', username);
@@ -58,6 +63,14 @@ router.get('/u/:username', async (req, res) => {
     const layout = ensureLayout(user.layout);
     const sectionVisibility = buildVisibilityMap(layout);
     recordLayoutState({ userId: user.id, layout });
+
+    if (!user) {
+      console.debug('User not found:', username);
+      return res.status(404).send('User not found');
+    }
+
+    const layout = ensureLayout(user.layout);
+main
 
     const buttonsResult = await db.query(
       `SELECT id, label, url, visible, icon

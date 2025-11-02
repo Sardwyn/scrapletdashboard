@@ -1,11 +1,3 @@
-import express from 'express';
-import db from '../db.js';
-import requireAuth from '../utils/requireAuth.js';
-import { ensureLayout, layoutDefaults, buildVisibilityMap } from '../utils/layout.js';
-import { recordLayoutState } from '../utils/metrics.js';
-
-const router = express.Router();
-
 // Icon inference helper
 function inferIcon(label = '', url = '') {
   const lower = (label + ' ' + url).toLowerCase();
@@ -123,8 +115,8 @@ router.post('/configure', requireAuth, async (req, res) => {
       }
     }
 
-    res.redirect('/dashboard');
-  } catch (err) {
+    res.redirect('/dashboard');␊
+  } catch (err) {␊
     console.error('Error saving profile layout:', err);
     res.status(500).send('Failed to save layout');
   }

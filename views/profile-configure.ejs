@@ -20,7 +20,11 @@
         <div class="space-y-2">
           <% ['avatar', 'bio', 'socialLinks', 'stats'].forEach(type => { %>
             <label class="flex items-center space-x-3">
+
               <input type="checkbox" name="<%= type %>" <%= sectionVisibility && sectionVisibility[type] === true ? 'checked' : '' %> class="accent-indigo-500" />
+
+              <input type="checkbox" name="<%= type %>" <%= layout.sections?.some(section => section.type === type && section.visible === true) ? 'checked' : '' %> class="accent-indigo-500" />
+main
               <span class="text-sm font-medium capitalize">Show <%= type %></span>
             </label>
           <% }) %>

@@ -103,6 +103,7 @@ export const layoutDefaults = {
   DEFAULT_ORDER
 };
 
+
 export function buildVisibilityMap(layout) {
   const visibility = {};
 
@@ -116,3 +117,5 @@ export function buildVisibilityMap(layout) {
 
   return visibility;
 }
+
+main

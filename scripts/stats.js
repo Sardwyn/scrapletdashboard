@@ -1,10 +1,13 @@
 import db from '../db.js';
 import { getStatsFromPlatform } from './scrapers/index.js';
+
 import {
   recordScraperRun,
   recordScraperSnapshot,
   recordApiStatus
 } from '../utils/metrics.js';
+
+
 
 const STATS_TTL_HOURS = 24;
 const sanitize = str => {
@@ -91,8 +94,12 @@ export async function getStatsForUser({ userId, youtube, twitch, kick, instagram
       console.debug(`🔍 Scraping ${platform} for handle: ${handle}`);
       const result = await getStatsFromPlatform(platform, handle);
 
+
       if (result) {
         recordScraperRun({ platform, status: 'success' });
+
+      if (result) {
+ main
         if (result.followers != null) {
           stats.followers[platform] = Number(result.followers) || 0;
         }
@@ -102,6 +109,7 @@ export async function getStatsForUser({ userId, youtube, twitch, kick, instagram
         if (result.ccv != null) {
           stats.ccv[platform] = Number(result.ccv) || 0;
         }
+
         recordScraperSnapshot({
           userId,
           platform,
@@ -123,6 +131,17 @@ export async function getStatsForUser({ userId, youtube, twitch, kick, instagram
       stats.apiStatus[platform] = 'fail';
     }
   }
+
+        stats.apiStatus[platform] = 'ok';
+      } else {
+        stats.apiStatus[platform] = 'fail';
+      }
+    } catch (err) {
+      console.warn(`⚠️ ${platform} stats failed:`, err.message);
+      stats.apiStatus[platform] = 'fail';
+    }
+  }
+main
 
   const marketability = gradeMarketability(stats);
 
@@ -154,6 +173,7 @@ export async function getStatsForUser({ userId, youtube, twitch, kick, instagram
          last_updated = now()`,
       [userId, safeFollowers, safeCCV, safeEngagement, safeMarketability]
     );
+
   } catch (err) {
     console.error('❌ Failed to cache stats for user:', userId);
     console.error('Stats payload:', {
@@ -168,6 +188,21 @@ export async function getStatsForUser({ userId, youtube, twitch, kick, instagram
 
   return { ...stats, marketability };
 }
+
+  } catch (err) {
+    console.error('❌ Failed to cache stats for user:', userId);
+    console.error('Stats payload:', {
+      followers: stats.followers,
+      ccv: stats.ccv,
+      engagement: stats.engagement,
+      marketability
+    });
+    console.error('DB error:', err);
+  }
+
+  return { ...stats, marketability };
+}
+main
 
 
 export function gradeMarketability({ followers = {}, ccv = {}, engagement = {} }) {
