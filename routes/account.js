@@ -4,9 +4,11 @@ import { join } from 'path';
 import db from '../db.js';
 import validator from 'validator';
 import { prepareUploadDirectory } from '../services/uploads.js';
+import requireAuth from '../utils/requireAuth.js';
 
 const router = express.Router();
 
+// Prepare upload directory
 const requestedUploadRoot = process.env.UPLOAD_DIR || '/var/www/scraplet-uploads';
 let uploadRoot = requestedUploadRoot;
 
@@ -16,19 +18,9 @@ try {
   console.error('Failed to prepare upload directory:', requestedUploadRoot, err);
 }
 
-const upload = multer({
-  dest: join(uploadRoot)
-});
+const upload = multer({ dest: join(uploadRoot) });
 
-function requireAuth(req, res, next) {
-  if (!req.session?.user) {
-    console.debug('requireAuth: No session user found');
-    return res.redirect('/auth/login');
-  }
-  console.debug('requireAuth: Session user present:', req.session.user.id);
-  next();
-}
-
+// Account overview
 router.get('/', requireAuth, async (req, res) => {
   try {
     const result = await db.query('SELECT * FROM users WHERE id = $1', [req.session.user.id]);
@@ -52,22 +44,17 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
+// Save bio and avatar
 router.post('/bio', requireAuth, upload.single('avatar'), async (req, res) => {
   const { display_name, bio, x, youtube, twitch, tags, onboarding } = req.body;
   const avatar_url = req.file ? `/uploads/${req.file.filename}` : null;
   const userId = req.session.user.id;
 
-  // Normalize tags: split comma-separated string into array
   let tagsArray = null;
   if (tags) {
-    if (Array.isArray(tags)) {
-      tagsArray = tags.map(t => t.trim()).filter(Boolean);
-    } else if (typeof tags === 'string') {
-      tagsArray = tags
-        .split(',')
-        .map(t => t.trim())
-        .filter(Boolean);
-    }
+    tagsArray = Array.isArray(tags)
+      ? tags.map(t => t.trim()).filter(Boolean)
+      : tags.split(',').map(t => t.trim()).filter(Boolean);
   }
 
   try {
@@ -87,17 +74,14 @@ router.post('/bio', requireAuth, upload.single('avatar'), async (req, res) => {
       [avatar_url, display_name, bio, x, youtube, twitch, tagsArray, userId]
     );
 
-    if (onboarding) {
-      return res.redirect('/dashboard?welcome=true');
-    } else {
-      return res.redirect('/account?saved=true');
-    }
+    res.redirect(onboarding ? '/dashboard?welcome=true' : '/account?saved=true');
   } catch (err) {
     console.error('Profile save error:', err);
     res.status(500).send('Failed to save profile');
   }
 });
 
+// Add button
 router.post('/buttons', requireAuth, async (req, res) => {
   let { label, url } = req.body;
   const userId = req.session.user.id;
@@ -124,6 +108,7 @@ router.post('/buttons', requireAuth, async (req, res) => {
   res.redirect('/account');
 });
 
+// Update button
 router.post('/buttons/:id/update', requireAuth, async (req, res) => {
   let { label, url } = req.body;
   const { id } = req.params;
@@ -142,6 +127,7 @@ router.post('/buttons/:id/update', requireAuth, async (req, res) => {
   res.redirect('/account');
 });
 
+// Toggle button visibility
 router.post('/buttons/:id/toggle', requireAuth, async (req, res) => {
   const { id } = req.params;
   await db.query(
@@ -151,6 +137,7 @@ router.post('/buttons/:id/toggle', requireAuth, async (req, res) => {
   res.redirect('/account');
 });
 
+// Delete button
 router.post('/buttons/:id/delete', requireAuth, async (req, res) => {
   const { id } = req.params;
   await db.query(

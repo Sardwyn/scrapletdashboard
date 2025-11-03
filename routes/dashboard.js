@@ -2,18 +2,9 @@ import express from 'express';
 import { widgets, overlays, getWidgetById } from '../utils/mockData.js';
 import db from '../db.js';
 import { getMetricsSnapshot } from '../utils/metrics.js';
-
 import requireAuth from '../utils/requireAuth.js';
-
-
-
-import requireAuth from '../utils/requireAuth.js';
-
-
-
 
 const router = express.Router();
-
 
 // Main dashboard landing view
 router.get('/', requireAuth, (req, res) => {
@@ -31,16 +22,8 @@ router.get('/', requireAuth, (req, res) => {
   });
 });
 
-
+// Metrics view
 router.get(['/metrics', '/metrics/'], requireAuth, (req, res) => {
-  const metrics = getMetricsSnapshot();
-
-
-
-router.get(['/metrics', '/metrics/'], requireAuth, (req, res) => {
-  const metrics = getMetricsSnapshot();
-
-router.get('/metrics', requireAuth, (req, res) => {
   const metrics = getMetricsSnapshot();
 
   res.render('dashboard-metrics', {
@@ -51,16 +34,12 @@ router.get('/metrics', requireAuth, (req, res) => {
 });
 
 // Tab-specific views
-router.get('/:tab', requireAuth, (req, res) => {
-  const tab = req.params.tab;
-  const validTabs = ['overlays', 'widgets', 'account'];
+router.get(['/overlays', '/widgets', '/account'], requireAuth, (req, res) => {
+  const tab = req.path.slice(1);
 
-
-
-  res.render('dashboard-metrics', {
-    user: req.session.user,
-    metrics,
-    tokenConfigured: Boolean(process.env.ADMIN_METRICS_TOKEN)
+  res.render('layout', {
+    tabView: `tabs/${tab}`,
+    user: req.session.user
   });
 });
 
@@ -106,21 +85,21 @@ router.get('/widgets/:id/configure', requireAuth, async (req, res) => {
   });
 });
 
-// Tab-specific views (keep last to avoid intercepting other routes)
-router.get(['/overlays', '/widgets', '/account'], requireAuth, (req, res) => {
-  const tab = req.path.slice(1);
-
-  res.render('layout', {
-    tabView: `tabs/${tab}`,
-    user: req.session.user
-  });
-});
-
 // Fallback for unknown tabs
 router.get('/:tab', requireAuth, (req, res) => {
   const tab = req.params.tab;
-  console.debug(`Invalid tab requested: ${tab}`);
-  res.redirect('/dashboard');
+  const validTabs = ['overlays', 'widgets', 'account'];
+
+  if (!validTabs.includes(tab)) {
+    console.debug(`Invalid tab requested: ${tab}`);
+    return res.redirect('/dashboard');
+  }
+
+  res.render('dashboard-metrics', {
+    user: req.session.user,
+    metrics: getMetricsSnapshot(),
+    tokenConfigured: Boolean(process.env.ADMIN_METRICS_TOKEN)
+  });
 });
 
 // Public profile page

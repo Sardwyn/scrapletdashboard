@@ -5,15 +5,15 @@ const metricsState = {
   tests: {
     passed: 0,
     failed: 0,
-    lastRun: null
+    lastRun: null,
   },
   layout: new Map(),
   activity: {
     requestsTotal: 0,
     viewsTotal: 0,
     lastRequest: null,
-    byUser: new Map()
-  }
+    byUser: new Map(),
+  },
 };
 
 function now() {
@@ -44,11 +44,12 @@ function normalizeDetail(detail) {
 
 export function recordScraperRun({ platform, status }) {
   if (!platform) return;
+
   const entry = metricsState.scrapers.get(platform) || {
     success: 0,
     failure: 0,
     lastSuccess: null,
-    lastFailure: null
+    lastFailure: null,
   };
 
   const timestamp = now();
@@ -69,33 +70,43 @@ export function recordScraperSnapshot({
   followers = null,
   ccv = null,
   engagement = null,
-  timestamp = null
+  timestamp = null,
 }) {
   if (!userId || !platform) return;
-  const key = `${userId}:${platform}`;
-  const provided = timestamp instanceof Date ? timestamp.getTime() : Number(timestamp);
+
+  const provided = timestamp instanceof Date
+    ? timestamp.getTime()
+    : Number(timestamp);
   const recordedAt = Number.isFinite(provided) ? provided : now();
-  metricsState.followers.set(key, {
+
+  metricsState.followers.set(`${userId}:${platform}`, {
     userId,
     platform,
     followers: Number.isFinite(Number(followers)) ? Number(followers) : 0,
-    ccv: Number.isFinite(Number(ccv)) ? Number(ccv) : 0,
-    engagement: Number.isFinite(Number(engagement)) ? Number(engagement) : 0,
-    timestamp: recordedAt
+    ccv:        Number.isFinite(Number(ccv))       ? Number(ccv)       : 0,
+    engagement: Number.isFinite(Number(engagement))? Number(engagement): 0,
+    timestamp: recordedAt,
   });
 }
 
-export function recordApiStatus({ service, status, platform = null, detail = null }) {
+export function recordApiStatus({
+  service,
+  status,
+  platform = null,
+  detail = null,
+}) {
   if (!service || !status) return;
+
   const normalizedDetail = normalizeDetail(detail);
   const key = `${service}:${status}:${platform ?? 'none'}:${normalizedDetail}`;
+
   const entry = metricsState.api.get(key) || {
     service,
     status,
     platform,
     detail: normalizedDetail,
     count: 0,
-    lastOccurrence: null
+    lastOccurrence: null,
   };
 
   entry.count += 1;
@@ -107,12 +118,13 @@ export function recordTestRun({ passed = 0, failed = 0, timestamp = now() }) {
   metricsState.tests = {
     passed: Number(passed) || 0,
     failed: Number(failed) || 0,
-    lastRun: timestamp
+    lastRun: timestamp,
   };
 }
 
 export function recordLayoutState({ userId, layout }) {
   if (!userId || !layout) return;
+
   const sections = Array.isArray(layout.sections) ? layout.sections : [];
   const visibility = sections.reduce((acc, section) => {
     if (section && section.type) {
@@ -124,11 +136,15 @@ export function recordLayoutState({ userId, layout }) {
   metricsState.layout.set(userId, {
     visibility,
     showButtonIcons: layout.showButtonIcons === true,
-    updatedAt: now()
+    updatedAt: now(),
   });
 }
 
-export function recordProfileRequest({ userId = null, username = null, status = 'received' }) {
+export function recordProfileRequest({
+  userId = null,
+  username = null,
+  status = 'received',
+}) {
   metricsState.activity.requestsTotal += 1;
   metricsState.activity.lastRequest = now();
 
@@ -137,38 +153,36 @@ export function recordProfileRequest({ userId = null, username = null, status = 
       username,
       views: 0,
       lastView: null,
-      statuses: {}
+      statuses: {},
     };
     entry.statuses[status] = (entry.statuses[status] || 0) + 1;
+
     if (status === 'success') {
       entry.views += 1;
       entry.lastView = now();
       metricsState.activity.viewsTotal += 1;
     }
+
     metricsState.activity.byUser.set(userId, entry);
   }
 }
 
 export function getMetricsSnapshot() {
-  const scrapers = Array.from(metricsState.scrapers.entries()).map(([platform, data]) => ({
-    platform,
-    ...data
-  }));
-
+  const scrapers = Array.from(metricsState.scrapers.entries()).map(
+    ([platform, data]) => ({ platform, ...data })
+  );
   const followers = Array.from(metricsState.followers.values());
-  const api = Array.from(metricsState.api.values());
-  const layout = Array.from(metricsState.layout.entries()).map(([userId, data]) => ({
-    userId,
-    ...data
-  }));
-  const activity = {
+  const api       = Array.from(metricsState.api.values());
+  const layout    = Array.from(metricsState.layout.entries()).map(
+    ([userId, data]) => ({ userId, ...data })
+  );
+  const activity  = {
     requestsTotal: metricsState.activity.requestsTotal,
-    viewsTotal: metricsState.activity.viewsTotal,
-    lastRequest: metricsState.activity.lastRequest,
-    byUser: Array.from(metricsState.activity.byUser.entries()).map(([userId, data]) => ({
-      userId,
-      ...data
-    }))
+    viewsTotal:    metricsState.activity.viewsTotal,
+    lastRequest:   metricsState.activity.lastRequest,
+    byUser:        Array.from(metricsState.activity.byUser.entries()).map(
+      ([userId, data]) => ({ userId, ...data })
+    ),
   };
 
   return {
@@ -177,7 +191,7 @@ export function getMetricsSnapshot() {
     api,
     tests: { ...metricsState.tests },
     layout,
-    activity
+    activity,
   };
 }
 
@@ -191,7 +205,7 @@ export function resetMetrics() {
     requestsTotal: 0,
     viewsTotal: 0,
     lastRequest: null,
-    byUser: new Map()
+    byUser: new Map(),
   };
 }
 
@@ -290,11 +304,11 @@ export function generatePrometheusMetrics() {
   lines.push('# TYPE layout_section_visible gauge');
   for (const [userId, data] of metricsState.layout.entries()) {
     const visibility = data.visibility || {};
-    Object.entries(visibility).forEach(([section, isVisible]) => {
+    for (const [section, isVisible] of Object.entries(visibility)) {
       lines.push(
         `layout_section_visible{user_id="${sanitizeLabel(userId)}",section="${sanitizeLabel(section)}"} ${isVisible ? 1 : 0}`
       );
-    });
+    }
   }
 
   lines.push('# HELP layout_show_button_icons Whether button icons are enabled per user.');
@@ -353,5 +367,5 @@ export default {
   recordProfileRequest,
   getMetricsSnapshot,
   resetMetrics,
-  generatePrometheusMetrics
+  generatePrometheusMetrics,
 };

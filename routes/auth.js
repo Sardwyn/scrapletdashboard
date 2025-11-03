@@ -7,6 +7,12 @@ import multer from 'multer';
 const router = express.Router();
 const upload = multer({ dest: 'public/uploads/' });
 
+// Debug middleware for all auth routes
+router.use((req, res, next) => {
+  console.debug(`Auth route hit: ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 // Signup route
 router.post('/signup', async (req, res) => {
   let { email, password, username } = req.body;
@@ -38,7 +44,7 @@ router.post('/signup', async (req, res) => {
     console.debug('Signup successful for:', email);
     res.redirect('/auth/onboard');
   } catch (err) {
-    console.error('Signup error:', err);
+    console.error('Signup error:', err.stack || err);
     res.status(500).send('Signup failed');
   }
 });
@@ -48,9 +54,11 @@ router.get('/login', (req, res) => {
   res.render('login');
 });
 
-// Login route
+// Login route with enhanced logging
 router.post('/login', async (req, res) => {
   let { email, username, password } = req.body;
+
+  console.debug('Login payload received:', { email, username });
 
   if (!password || (!email && !username)) {
     return res.status(400).json({ success: false, message: 'Email or username and password required' });
@@ -66,12 +74,21 @@ router.post('/login', async (req, res) => {
     );
 
     const user = result.rows[0];
-    if (!user) {
-      console.debug('Login failed: user not found');
-      return res.status(401).json({ success: false, message: 'User not found' });
+    console.debug('User lookup result:', user);
+
+    if (!user || !user.password_hash) {
+      console.debug('Login failed: user or password_hash missing');
+      return res.status(401).json({ success: false, message: 'User not found or password missing' });
     }
 
-    const valid = await bcrypt.compare(password, user.password_hash);
+    let valid = false;
+    try {
+      valid = await bcrypt.compare(password, user.password_hash);
+    } catch (err) {
+      console.error('bcrypt.compare() error:', err.stack || err);
+      return res.status(500).json({ success: false, message: 'Password check failed' });
+    }
+
     if (!valid) {
       console.debug('Login failed: invalid password');
       return res.status(401).json({ success: false, message: 'Invalid password' });
@@ -86,7 +103,7 @@ router.post('/login', async (req, res) => {
     console.debug('Login successful for:', identifier);
     res.json({ success: true, redirect: '/dashboard' });
   } catch (err) {
-    console.error('Login error:', err);
+    console.error('Login route error:', err.stack || err);
     res.status(500).json({ success: false, message: 'Login failed' });
   }
 });
@@ -141,7 +158,7 @@ router.post('/onboard', upload.single('avatar'), async (req, res) => {
 
     res.redirect('/dashboard');
   } catch (err) {
-    console.error('Onboarding error:', err);
+    console.error('Onboarding error:', err.stack || err);
     res.status(500).send('Profile setup failed');
   }
 });

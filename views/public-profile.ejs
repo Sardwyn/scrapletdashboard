@@ -7,305 +7,129 @@
 </head>
 <body class="bg-gray-950 text-white font-sans px-6 py-10">
 
-
-  <%
-    let providedVisibility;
-    try {
-      providedVisibility = sectionVisibility;
-    } catch (err) {
-      providedVisibility = undefined;
-    }
-
-    const fallbackVisibility = Array.isArray(layout?.sections)
+<%
+  const visibilityMap = sectionVisibility && typeof sectionVisibility === 'object'
+    ? sectionVisibility
+    : Array.isArray(layout?.sections)
       ? layout.sections.reduce((acc, section) => {
-          if (section && typeof section.type === 'string') {
-            acc[section.type] = section.visible === true;
-          }
+          if (section?.type) acc[section.type] = section.visible === true;
           return acc;
         }, {})
       : {};
 
-    const sectionVisibilityMap = (providedVisibility && typeof providedVisibility === 'object')
-      ? providedVisibility
-      : fallbackVisibility;
+  const isSectionVisible = type => visibilityMap[type] === true;
+  const formatCount = value => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric.toLocaleString() : (value ?? '0');
+  };
 
-    const isSectionVisible = type => sectionVisibilityMap[type] === true;
-  %>
-  <% const followerEntries = Object.entries((stats && stats.followers) || {}); %>
-  <% const ccvEntries = Object.entries((stats && stats.ccv) || {}); %>
-  <% const hasStatsData = followerEntries.length > 0 || ccvEntries.length > 0; %>
-  <% const formatCount = value => { const numeric = Number(value); return Number.isFinite(numeric) ? numeric.toLocaleString() : (value ?? '0'); }; %>
+  const followerEntries = Object.entries(stats?.followers || {});
+  const ccvEntries = Object.entries(stats?.ccv || {});
+  const hasStatsData = followerEntries.length > 0 || ccvEntries.length > 0;
+%>
 
+<div class="max-w-2xl mx-auto bg-gray-900 p-8 rounded-xl shadow-lg border border-gray-800">
 
-  <%
-    let providedVisibility;
-    try {
-      providedVisibility = sectionVisibility;
-    } catch (err) {
-      providedVisibility = undefined;
-    }
-
-    const fallbackVisibility = Array.isArray(layout?.sections)
-      ? layout.sections.reduce((acc, section) => {
-          if (section && typeof section.type === 'string') {
-            acc[section.type] = section.visible === true;
-          }
-          return acc;
-        }, {})
-      : {};
-
-    const sectionVisibilityMap = (providedVisibility && typeof providedVisibility === 'object')
-      ? providedVisibility
-      : fallbackVisibility;
-
-    const isSectionVisible = type => sectionVisibilityMap[type] === true;
-  %>
-  <% const followerEntries = Object.entries((stats && stats.followers) || {}); %>
-  <% const ccvEntries = Object.entries((stats && stats.ccv) || {}); %>
-  <% const hasStatsData = followerEntries.length > 0 || ccvEntries.length > 0; %>
-  <% const formatCount = value => { const numeric = Number(value); return Number.isFinite(numeric) ? numeric.toLocaleString() : (value ?? '0'); }; %>
-
-  <% const visible = type => sectionVisibility && sectionVisibility[type] === true; %>
-
-  <% const visible = type => layout?.sections?.some(section => section.type === type && section.visible === true); %>
-
-  <% const followerEntries = Object.entries((stats && stats.followers) || {}); %>
-  <% const ccvEntries = Object.entries((stats && stats.ccv) || {}); %>
-  <% const hasStatsData = followerEntries.length > 0 || ccvEntries.length > 0; %>
-  <% const formatCount = value => { const numeric = Number(value); return Number.isFinite(numeric) ? numeric.toLocaleString() : (value ?? '0'); }; %>
-
-
-  <div class="max-w-2xl mx-auto bg-gray-900 p-8 rounded-xl shadow-lg border border-gray-800">
-
-    <!-- Identity Block -->
-    <div class="flex items-center space-x-4 mb-6">
-      <% if (profile.avatar_url) { %>
-        <img src="<%= profile.avatar_url %>" alt="Avatar" class="w-16 h-16 rounded-full border border-gray-700" />
+  <!-- Identity Block -->
+  <div class="flex items-center space-x-4 mb-6">
+    <% if (profile.avatar_url) { %>
+      <img src="<%= profile.avatar_url %>" alt="Avatar" class="w-16 h-16 rounded-full border border-gray-700" />
+    <% } %>
+    <div>
+      <h1 class="text-2xl font-bold"><%= profile.display_name || username %></h1>
+      <% if (profile.business_email) { %>
+        <p class="text-blue-400 hover:underline">
+          <a href="mailto:<%= profile.business_email %>"><%= profile.business_email %></a>
+        </p>
       <% } %>
-      <div>
-        <h1 class="text-2xl font-bold"><%= profile.display_name || username %></h1>
-        <% if (profile.business_email) { %>
-          <p class="text-blue-400 hover:underline">
-            <a href="mailto:<%= profile.business_email %>"><%= profile.business_email %></a>
-          </p>
-        <% } %>
-      </div>
     </div>
-
-    <!-- Bio -->
-
-    <% if (isSectionVisible('bio')) { %>
-      <p class="text-gray-300 mb-4"><%= profile.bio || 'No bio yet.' %></p>
-    <% } %>
-
-    <!-- Stats -->
-    <% if (isSectionVisible('stats')) { %>
-      <% if (hasStatsData) { %>
-        <div class="bg-gray-900 p-6 rounded-lg mt-6 shadow-md border border-gray-800">
-          <h3 class="text-xl font-bold mb-4 text-indigo-300">📊 Reach & Engagement</h3>
-          <div class="space-y-4 text-sm text-white">
-
-            <% followerEntries.forEach(([platform, count]) => { %>
-              <div class="flex items-center justify-between border-b border-gray-800 pb-2">
-                <div class="flex items-center gap-2">
-                  <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
-                  <span class="capitalize"><%= platform %> followers</span>
-                </div>
-                <span class="font-semibold"><%= formatCount(count) %></span>
-
-              </div>
-            <% }) %>
-
-            <% ccvEntries.forEach(([platform, count]) => { %>
-              <div class="flex items-center justify-between border-b border-gray-800 pb-2">
-                <div class="flex items-center gap-2">
-                  <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
-                  <span class="capitalize"><%= platform %> CCV</span>
-                </div>
-                <span class="font-semibold"><%= formatCount(count) %></span>
-              </div>
-            <% }) %>
-
-            <% if (marketability) { %>
-              <div class="flex justify-between pt-2 text-indigo-400 font-bold">
-                <span>Marketability Grade</span>
-                <span><%= marketability %></span>
-              </div>
-            <% } %>
-
-            <% if (stats && stats.last_updated) { %>
-              <p class="text-xs text-gray-500 mt-2">Last updated: <%= new Date(stats.last_updated).toLocaleString() %></p>
-            <% } %>
-          </div>
-        </div>
-      <% } else { %>
-        <p class="text-sm text-red-400 mt-4">⚠️ Stats unavailable — API may be down or not linked.</p>
-      <% } %>
-    <% } %>
-
-    <% if (isSectionVisible('bio')) { %>
-      <p class="text-gray-300 mb-4"><%= profile.bio || 'No bio yet.' %></p>
-    <% } %>
-
-
-    <!-- Stats -->
-    <% if (isSectionVisible('stats')) { %>
-      <% if (hasStatsData) { %>
-        <div class="bg-gray-900 p-6 rounded-lg mt-6 shadow-md border border-gray-800">
-          <h3 class="text-xl font-bold mb-4 text-indigo-300">📊 Reach & Engagement</h3>
-          <div class="space-y-4 text-sm text-white">
-
-            <% followerEntries.forEach(([platform, count]) => { %>
-              <div class="flex items-center justify-between border-b border-gray-800 pb-2">
-                <div class="flex items-center gap-2">
-                  <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
-                  <span class="capitalize"><%= platform %> followers</span>
-                </div>
-                <span class="font-semibold"><%= formatCount(count) %></span>
-
-              </div>
-            <% }) %>
-
-            <% ccvEntries.forEach(([platform, count]) => { %>
-              <div class="flex items-center justify-between border-b border-gray-800 pb-2">
-                <div class="flex items-center gap-2">
-                  <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
-                  <span class="capitalize"><%= platform %> CCV</span>
-                </div>
-                <span class="font-semibold"><%= formatCount(count) %></span>
-              </div>
-            <% }) %>
-
-            <% if (marketability) { %>
-              <div class="flex justify-between pt-2 text-indigo-400 font-bold">
-                <span>Marketability Grade</span>
-                <span><%= marketability %></span>
-              </div>
-            <% } %>
-
-            <% if (stats && stats.last_updated) { %>
-              <p class="text-xs text-gray-500 mt-2">Last updated: <%= new Date(stats.last_updated).toLocaleString() %></p>
-            <% } %>
-          </div>
-        </div>
-      <% } else { %>
-        <p class="text-sm text-red-400 mt-4">⚠️ Stats unavailable — API may be down or not linked.</p>
-      <% } %>
-    <% } %>
-
-    <!-- Stats -->
-    <% if (visible('stats')) { %>
-      <% if (hasStatsData) { %>
-        <div class="bg-gray-900 p-6 rounded-lg mt-6 shadow-md border border-gray-800">
-          <h3 class="text-xl font-bold mb-4 text-indigo-300">📊 Reach & Engagement</h3>
-          <div class="space-y-4 text-sm text-white">
-
-            <% followerEntries.forEach(([platform, count]) => { %>
-              <div class="flex items-center justify-between border-b border-gray-800 pb-2">
-                <div class="flex items-center gap-2">
-                  <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
-                  <span class="capitalize"><%= platform %> followers</span>
-                </div>
-                <span class="font-semibold"><%= formatCount(count) %></span>
-
-              </div>
-            <% }) %>
-
-            <% ccvEntries.forEach(([platform, count]) => { %>
-              <div class="flex items-center justify-between border-b border-gray-800 pb-2">
-                <div class="flex items-center gap-2">
-                  <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
-                  <span class="capitalize"><%= platform %> CCV</span>
-                </div>
-                <span class="font-semibold"><%= formatCount(count) %></span>
-              </div>
-            <% }) %>
-
-            <% if (marketability) { %>
-              <div class="flex justify-between pt-2 text-indigo-400 font-bold">
-                <span>Marketability Grade</span>
-                <span><%= marketability %></span>
-              </div>
-            <% } %>
-
-            <% if (stats && stats.last_updated) { %>
-              <p class="text-xs text-gray-500 mt-2">Last updated: <%= new Date(stats.last_updated).toLocaleString() %></p>
-            <% } %>
-          </div>
-        </div>
-      <% } else { %>
-        <p class="text-sm text-red-400 mt-4">⚠️ Stats unavailable — API may be down or not linked.</p>
-      <% } %>
-    <% } %>
-
-
-
-
-
-
-    <!-- Social Links -->
-
-    <% if (isSectionVisible('socialLinks')) { %>
-
-    <% if (isSectionVisible('socialLinks')) { %>
-
-      <div class="flex space-x-4 mb-4">
-        <% if (profile.x) { %>
-          <a href="https://x.com/<%= profile.x %>" target="_blank" class="text-blue-400 hover:underline">X</a>
-        <% } %>
-        <% if (profile.youtube) { %>
-          <a href="<%= profile.youtube %>" class="text-red-400 hover:underline">YouTube</a>
-        <% } %>
-        <% if (profile.twitch) { %>
-          <a href="<%= profile.twitch %>" class="text-purple-400 hover:underline">Twitch</a>
-        <% } %>
-      </div>
-    <% } %>
-
-    <!-- Premium Blocks -->
-
-    <% if (isSectionVisible('featuredWidget')) { %>
-
-    <% if (isSectionVisible('featuredWidget')) { %>
-
-      <div class="bg-gray-800 p-4 rounded mb-4">
-        <p class="text-gray-400 italic">Featured Widget (Premium)</p>
-      </div>
-    <% } %>
-
-
-    <% if (isSectionVisible('sponsorBanner')) { %>
-
-    <% if (isSectionVisible('sponsorBanner')) { %>
-
-      <div class="bg-gray-800 p-4 rounded mb-4">
-        <p class="text-gray-400 italic">Sponsor Banner (Premium)</p>
-      </div>
-    <% } %>
-
-    <% if (isSectionVisible('customHtml')) { %>
-
-    <% if (isSectionVisible('customHtml')) { %>
-
-      <div class="bg-gray-800 p-4 rounded mb-4">
-        <p class="text-gray-400 italic">Custom HTML Block (Premium)</p>
-      </div>
-    <% } %>
-
-    <!-- Custom Buttons -->
-    <% if (customButtons.length > 0) { %>
-      <div class="mt-6 space-y-4">
-        <% customButtons.forEach(btn => { %>
-          <a href="<%= btn.url %>" target="_blank" class="flex items-center justify-center gap-3 bg-blue-600 text-white p-4 rounded-lg text-lg font-semibold shadow hover:bg-blue-700">
-            <% if (layout.showButtonIcons && btn.icon) { %>
-              <img src="/icons/<%= btn.icon || 'default' %>.svg" alt="<%= btn.label %> icon" class="w-5 h-5" />
-            <% } %>
-            <span><%= btn.label %></span>
-          </a>
-        <% }) %>
-      </div>
-    <% } %>
-
   </div>
+
+  <!-- Bio -->
+  <% if (isSectionVisible('bio')) { %>
+    <p class="text-gray-300 mb-4"><%= profile.bio || 'No bio yet.' %></p>
+  <% } %>
+
+  <!-- Stats -->
+  <% if (isSectionVisible('stats')) { %>
+    <% if (hasStatsData) { %>
+      <div class="bg-gray-900 p-6 rounded-lg mt-6 shadow-md border border-gray-800">
+        <h3 class="text-xl font-bold mb-4 text-indigo-300">📊 Reach & Engagement</h3>
+        <div class="space-y-4 text-sm text-white">
+          <% followerEntries.forEach(([platform, count]) => { %>
+            <div class="flex items-center justify-between border-b border-gray-800 pb-2">
+              <div class="flex items-center gap-2">
+                <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
+                <span class="capitalize"><%= platform %> followers</span>
+              </div>
+              <span class="font-semibold"><%= formatCount(count) %></span>
+            </div>
+          <% }) %>
+
+          <% ccvEntries.forEach(([platform, count]) => { %>
+            <div class="flex items-center justify-between border-b border-gray-800 pb-2">
+              <div class="flex items-center gap-2">
+                <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
+                <span class="capitalize"><%= platform %> CCV</span>
+              </div>
+              <span class="font-semibold"><%= formatCount(count) %></span>
+            </div>
+          <% }) %>
+
+          <% if (marketability) { %>
+            <div class="flex justify-between pt-2 text-indigo-400 font-bold">
+              <span>Marketability Grade</span>
+              <span><%= marketability %></span>
+            </div>
+          <% } %>
+
+          <% if (stats?.last_updated) { %>
+            <p class="text-xs text-gray-500 mt-2">Last updated: <%= new Date(stats.last_updated).toLocaleString() %></p>
+          <% } %>
+        </div>
+      </div>
+    <% } else { %>
+      <p class="text-sm text-red-400 mt-4">⚠️ Stats unavailable — API may be down or not linked.</p>
+    <% } %>
+  <% } %>
+
+  <!-- Social Links -->
+  <% if (isSectionVisible('socialLinks')) { %>
+    <div class="flex space-x-4 mb-4">
+      <% if (profile.x) { %>
+        <a href="https://x.com/<%= profile.x %>" target="_blank" class="text-blue-400 hover:underline">X</a>
+      <% } %>
+      <% if (profile.youtube) { %>
+        <a href="<%= profile.youtube %>" class="text-red-400 hover:underline">YouTube</a>
+      <% } %>
+      <% if (profile.twitch) { %>
+        <a href="<%= profile.twitch %>" class="text-purple-400 hover:underline">Twitch</a>
+      <% } %>
+    </div>
+  <% } %>
+
+  <!-- Premium Blocks -->
+  <% ['featuredWidget', 'sponsorBanner', 'customHtml'].forEach(type => {
+       if (isSectionVisible(type)) { %>
+    <div class="bg-gray-800 p-4 rounded mb-4">
+      <p class="text-gray-400 italic"><%= type === 'featuredWidget' ? 'Featured Widget' : type === 'sponsorBanner' ? 'Sponsor Banner' : 'Custom HTML Block' %> (Premium)</p>
+    </div>
+  <% } }) %>
+
+  <!-- Custom Buttons -->
+  <% if (customButtons.length > 0) { %>
+    <div class="mt-6 space-y-4">
+      <% customButtons.forEach(btn => { %>
+        <a href="<%= btn.url %>" target="_blank" class="flex items-center justify-center gap-3 bg-blue-600 text-white p-4 rounded-lg text-lg font-semibold shadow hover:bg-blue-700">
+          <% if (layout.showButtonIcons && btn.icon) { %>
+            <img src="/icons/<%= btn.icon || 'default' %>.svg" alt="<%= btn.label %> icon" class="w-5 h-5" />
+          <% } %>
+          <span><%= btn.label %></span>
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
+
+</div>
 </body>
 </html>
