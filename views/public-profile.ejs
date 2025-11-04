@@ -26,6 +26,11 @@
   const followerEntries = Object.entries(stats?.followers || {});
   const ccvEntries = Object.entries(stats?.ccv || {});
   const hasStatsData = followerEntries.length > 0 || ccvEntries.length > 0;
+
+  const sectionMap = new Map();
+  layout.sections.forEach(s => {
+    if (s?.type) sectionMap.set(s.type, s);
+  });
 %>
 
 <div class="max-w-2xl mx-auto bg-gray-900 p-8 rounded-xl shadow-lg border border-gray-800">
@@ -45,76 +50,120 @@
     </div>
   </div>
 
-  <!-- Bio -->
-  <% if (isSectionVisible('bio')) { %>
-    <p class="text-gray-300 mb-4"><%= profile.bio || 'No bio yet.' %></p>
-  <% } %>
+  <!-- Dynamic Section Rendering -->
+  <% layout.sections.forEach(section => {
+  const { type } = section;
 
-  <!-- Stats -->
-  <% if (isSectionVisible('stats')) { %>
-    <% if (hasStatsData) { %>
-      <div class="bg-gray-900 p-6 rounded-lg mt-6 shadow-md border border-gray-800">
-        <h3 class="text-xl font-bold mb-4 text-indigo-300">📊 Reach & Engagement</h3>
-        <div class="space-y-4 text-sm text-white">
-          <% followerEntries.forEach(([platform, count]) => { %>
-            <div class="flex items-center justify-between border-b border-gray-800 pb-2">
-              <div class="flex items-center gap-2">
-                <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
-                <span class="capitalize"><%= platform %> followers</span>
-              </div>
-              <span class="font-semibold"><%= formatCount(count) %></span>
-            </div>
-          <% }) %>
+    if (section?.visible && (!section.premium || profile.plan === 'pro')) {
 
-          <% ccvEntries.forEach(([platform, count]) => { %>
-            <div class="flex items-center justify-between border-b border-gray-800 pb-2">
-              <div class="flex items-center gap-2">
-                <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
-                <span class="capitalize"><%= platform %> CCV</span>
-              </div>
-              <span class="font-semibold"><%= formatCount(count) %></span>
-            </div>
-          <% }) %>
+  %>
+    <div class="mb-6">
+      <% if (type === 'stats') { %>
+        <% if (hasStatsData) { %>
+          <div class="bg-gray-900 p-6 rounded-lg shadow-md border border-gray-800">
+            <h3 class="text-xl font-bold mb-4 text-indigo-300">📊 Reach & Engagement</h3>
+            <div class="space-y-4 text-sm text-white">
+              <% followerEntries.forEach(([platform, count]) => { %>
+                <div class="flex items-center justify-between border-b border-gray-800 pb-2">
+                  <div class="flex items-center gap-2">
+                    <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
+                    <span class="capitalize"><%= platform %> followers</span>
+                  </div>
+                  <span class="font-semibold"><%= formatCount(count) %></span>
+                </div>
+              <% }) %>
 
-          <% if (marketability) { %>
-            <div class="flex justify-between pt-2 text-indigo-400 font-bold">
-              <span>Marketability Grade</span>
-              <span><%= marketability %></span>
+              <% ccvEntries.forEach(([platform, count]) => { %>
+                <div class="flex items-center justify-between border-b border-gray-800 pb-2">
+                  <div class="flex items-center gap-2">
+                    <img src="/icons/<%= platform %>.svg" alt="<%= platform %>" class="w-4 h-4" />
+                    <span class="capitalize"><%= platform %> CCV</span>
+                  </div>
+                  <span class="font-semibold"><%= formatCount(count) %></span>
+                </div>
+              <% }) %>
+
+              <% if (marketability) { %>
+                <div class="flex justify-between pt-2 text-indigo-400 font-bold">
+                  <span>Marketability Grade</span>
+                  <span><%= marketability %></span>
+                </div>
+              <% } %>
+
+              <% if (stats?.last_updated) { %>
+                <p class="text-xs text-gray-500 mt-2">Last updated: <%= new Date(stats.last_updated).toLocaleString() %></p>
+              <% } %>
             </div>
+          </div>
+        <% } else { %>
+          <p class="text-sm text-red-400">⚠️ Stats unavailable — API may be down or not linked.</p>
+        <% } %>
+
+      <% } else if (type === 'socialLinks') { %>
+        <div class="flex justify-center space-x-6">
+          <% if (profile.x) { %>
+            <a href="https://x.com/<%= profile.x %>" target="_blank" class="text-blue-400 hover:underline">X</a>
           <% } %>
-
-          <% if (stats?.last_updated) { %>
-            <p class="text-xs text-gray-500 mt-2">Last updated: <%= new Date(stats.last_updated).toLocaleString() %></p>
+          <% if (profile.youtube) { %>
+            <a href="<%= profile.youtube %>" class="text-red-400 hover:underline">YouTube</a>
+          <% } %>
+          <% if (profile.twitch) { %>
+            <a href="<%= profile.twitch %>" class="text-purple-400 hover:underline">Twitch</a>
           <% } %>
         </div>
-      </div>
-    <% } else { %>
-      <p class="text-sm text-red-400 mt-4">⚠️ Stats unavailable — API may be down or not linked.</p>
-    <% } %>
-  <% } %>
 
-  <!-- Social Links -->
-  <% if (isSectionVisible('socialLinks')) { %>
-    <div class="flex space-x-4 mb-4">
-      <% if (profile.x) { %>
-        <a href="https://x.com/<%= profile.x %>" target="_blank" class="text-blue-400 hover:underline">X</a>
-      <% } %>
-      <% if (profile.youtube) { %>
-        <a href="<%= profile.youtube %>" class="text-red-400 hover:underline">YouTube</a>
-      <% } %>
-      <% if (profile.twitch) { %>
-        <a href="<%= profile.twitch %>" class="text-purple-400 hover:underline">Twitch</a>
+      <% } else if (type === 'sponsorBanner') { %>
+        <% if (profile.sponsors?.length > 0) { %>
+          <div class="space-y-6">
+            <% profile.sponsors.forEach(s => { %>
+              <div class="bg-gray-800 rounded-xl shadow border border-gray-700 overflow-hidden">
+                <% if (s.banner_url) { %>
+                  <a href="<%= s.url %>" target="_blank">
+                    <img src="<%= s.banner_url %>" alt="<%= s.name %> banner" class="w-full h-40 object-cover" />
+                  </a>
+                <% } else { %>
+                  <a href="<%= s.url %>" target="_blank" class="flex items-center gap-3 px-4 py-3 hover:bg-gray-700 transition">
+                    <% if (s.logo_url) { %>
+                      <img src="<%= s.logo_url %>" alt="<%= s.name %>" class="h-6 w-auto max-w-[120px] object-contain" />
+                    <% } %>
+                    <span class="text-sm text-white font-medium"><%= s.name %></span>
+                  </a>
+                <% } %>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <p class="text-sm text-gray-500 italic">No sponsors configured.</p>
+        <% } %>
+
+      <% } else if (type === 'avatar') { %>
+        <!-- Avatar already rendered -->
+
+      <% } else if (type === 'bio') { %>
+        <% if (profile.bio) { %>
+          <div class="bg-gray-800 p-4 rounded text-sm text-gray-300">
+            <p><%= profile.bio %></p>
+          </div>
+        <% } %>
+
+      <% } else if (type === 'featuredWidget') { %>
+        <div class="bg-gray-800 p-4 rounded">
+          <p class="text-gray-400 italic">Featured Widget (Premium)</p>
+        </div>
+
+      <% } else if (type === 'customHtml') { %>
+        <div class="bg-gray-800 p-4 rounded mt-6">
+          <p class="text-gray-400 italic">Custom HTML Block (Premium)</p>
+        </div>
+
+      <% } else { %>
+        <div class="bg-gray-800 p-4 rounded">
+          <p class="text-gray-400 italic">Unknown section: <%= type %></p>
+        </div>
       <% } %>
     </div>
   <% } %>
-
-  <!-- Premium Blocks -->
-  <% ['featuredWidget', 'sponsorBanner', 'customHtml'].forEach(type => {
-       if (isSectionVisible(type)) { %>
-    <div class="bg-gray-800 p-4 rounded mb-4">
-      <p class="text-gray-400 italic"><%= type === 'featuredWidget' ? 'Featured Widget' : type === 'sponsorBanner' ? 'Sponsor Banner' : 'Custom HTML Block' %> (Premium)</p>
-    </div>
-  <% } }) %>
+<% }) %>
 
   <!-- Custom Buttons -->
   <% if (customButtons.length > 0) { %>

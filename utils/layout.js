@@ -1,3 +1,5 @@
+const PREMIUM_TYPES = ['sponsorBanner', 'customHtml', 'featuredWidget'];
+
 const DEFAULT_SECTIONS = [
   { type: 'avatar', visible: true },
   { type: 'bio', visible: true },
@@ -24,71 +26,76 @@ function parseLayout(layout) {
 }
 
 function coerceVisibility(value) {
-  if (typeof value === 'boolean') {
-    return value;
-  }
+  if (typeof value === 'boolean') return value;
 
   if (typeof value === 'string') {
     const normalized = value.trim().toLowerCase();
-    if (['false', '0', 'off', 'no'].includes(normalized)) {
-      return false;
-    }
-    if (['true', '1', 'on', 'yes'].includes(normalized)) {
-      return true;
-    }
+    if (['false', '0', 'off', 'no'].includes(normalized)) return false;
+    if (['true', '1', 'on', 'yes'].includes(normalized)) return true;
   }
 
   return Boolean(value);
 }
 
-function normalizeSections(sections) {
-  const map = new Map();
+function normalizeOrder(order) {
+  const allowed = new Set(DEFAULT_SECTIONS.map(section => section.type));
+  const seeded = Array.isArray(order) ? order.filter(type => allowed.has(type)) : [];
+  const missing = DEFAULT_SECTIONS.map(s => s.type).filter(type => !seeded.includes(type));
+  return [...seeded, ...missing];
+}
+
+function normalizeSections(sections, order) {
+  const visibilityMap = new Map();
   if (Array.isArray(sections)) {
     sections.forEach(section => {
-      if (section && typeof section.type === 'string') {
-        map.set(section.type, {
-          type: section.type,
-          visible: coerceVisibility(section.visible)
-        });
+      if (section?.type) {
+        visibilityMap.set(section.type, coerceVisibility(section.visible));
       }
     });
   }
 
-  return DEFAULT_SECTIONS.map(defaultSection => {
-    const override = map.get(defaultSection.type);
-    if (override) {
-      return {
-        type: defaultSection.type,
-        visible: override.visible
-      };
-    }
-    return { ...defaultSection };
-  });
-}
+  const allTypes = new Set(DEFAULT_SECTIONS.map(s => s.type));
+  const orderedTypes = Array.isArray(order)
+    ? order.filter(type => allTypes.has(type))
+    : DEFAULT_ORDER;
 
-function normalizeOrder(order) {
-  const allowed = new Set(DEFAULT_SECTIONS.map(section => section.type));
-  const seeded = Array.isArray(order) ? order.filter(type => allowed.has(type)) : [];
-  const merged = [...new Set([...seeded, ...DEFAULT_ORDER])];
-  return merged;
+  return orderedTypes.map(type => {
+    const fallback = DEFAULT_SECTIONS.find(s => s.type === type);
+    return {
+      type,
+      visible: visibilityMap.has(type)
+        ? visibilityMap.get(type)
+        : fallback?.visible ?? false,
+      premium: PREMIUM_TYPES.includes(type)
+    };
+  });
 }
 
 export function ensureLayout(rawLayout) {
   let layout = parseLayout(rawLayout);
+  if (!layout || typeof layout !== 'object') layout = {};
 
-  if (!layout || typeof layout !== 'object') {
-    layout = {};
-  }
+  const allTypes = layoutDefaults.DEFAULT_SECTIONS.map(s => s.type);
+  const premiumTypes = ['sponsorBanner', 'customHtml', 'featuredWidget'];
 
-  layout.sections = normalizeSections(layout.sections);
+  const sectionMap = new Map();
+  Array.isArray(layout.sections) && layout.sections.forEach(s => {
+    if (s?.type) sectionMap.set(s.type, s);
+  });
+
+  const orderedSections = allTypes.map(type => {
+    const existing = sectionMap.get(type);
+    return {
+      type,
+      visible: coerceVisibility(existing?.visible ?? false),
+      premium: existing?.premium ?? premiumTypes.includes(type)
+    };
+  });
+
+  layout.sections = orderedSections;
 
   const theme = layout.theme && typeof layout.theme === 'object' ? layout.theme : {};
-  layout.theme = {
-    ...DEFAULT_THEME,
-    ...theme
-  };
-
-  layout.order = normalizeOrder(layout.order);
+  layout.theme = { ...layoutDefaults.DEFAULT_THEME, ...theme };
 
   if (typeof layout.showButtonIcons !== 'boolean') {
     layout.showButtonIcons = true;
@@ -97,24 +104,21 @@ export function ensureLayout(rawLayout) {
   return layout;
 }
 
+
 export const layoutDefaults = {
   DEFAULT_SECTIONS,
   DEFAULT_THEME,
   DEFAULT_ORDER
 };
 
-
 export function buildVisibilityMap(layout) {
   const visibility = {};
-
   if (layout && Array.isArray(layout.sections)) {
     layout.sections.forEach(section => {
-      if (section && typeof section.type === 'string') {
+      if (section?.type) {
         visibility[section.type] = coerceVisibility(section.visible) === true;
       }
     });
   }
-
   return visibility;
 }
-

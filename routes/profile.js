@@ -6,7 +6,8 @@ import { recordLayoutState } from '../utils/metrics.js';
 
 const router = express.Router();
 
-// Icon inference helper
+const premiumTypes = ['sponsorBanner', 'customHtml', 'featuredWidget'];
+
 function inferIcon(label = '', url = '') {
   const lower = (label + ' ' + url).toLowerCase();
   if (lower.includes('twitch')) return 'twitch';
@@ -18,21 +19,16 @@ function inferIcon(label = '', url = '') {
   return null;
 }
 
-// GET /profile/configure — layout editor page
+// GET /profile/configure
 router.get('/configure', requireAuth, async (req, res) => {
   const userId = req.session?.user?.id;
-  if (!userId) {
-    console.debug('GET /profile/configure: No session user');
-    return res.redirect('/auth/login');
-  }
+  if (!userId) return res.redirect('/auth/login');
 
   try {
-    const result = await db.query(
-      'SELECT layout FROM users WHERE id = $1',
-      [userId]
-    );
+    const result = await db.query('SELECT layout FROM users WHERE id = $1', [userId]);
+    const rawLayout = result.rows[0]?.layout || {};
+    const layout = ensureLayout(rawLayout);
 
-    const layout = ensureLayout(result.rows[0]?.layout || {});
     recordLayoutState({ userId, layout });
     const sectionVisibility = buildVisibilityMap(layout);
 
@@ -40,13 +36,12 @@ router.get('/configure', requireAuth, async (req, res) => {
       'SELECT * FROM custom_buttons WHERE user_id = $1 ORDER BY sort_order NULLS LAST, created_at',
       [userId]
     );
-    const customButtons = buttonsResult.rows;
 
     res.render('profile-configure', {
       user: req.session.user,
       layout,
       sectionVisibility,
-      customButtons
+      customButtons: buttonsResult.rows
     });
   } catch (err) {
     console.error('Error loading profile layout:', err);
@@ -54,32 +49,49 @@ router.get('/configure', requireAuth, async (req, res) => {
   }
 });
 
-// POST /profile/configure — save layout config
+// POST /profile/configure
 router.post('/configure', requireAuth, async (req, res) => {
   const userId = req.session?.user?.id;
-  if (!userId) {
-    console.debug('POST /profile/configure: No session user');
-    return res.redirect('/auth/login');
-  }
+  if (!userId) return res.redirect('/auth/login');
 
-  const layout = ensureLayout({
-    sections: [
-      { type: 'avatar', visible: !!req.body.avatar },
-      { type: 'bio', visible: !!req.body.bio },
-      { type: 'socialLinks', visible: !!req.body.socialLinks },
-      { type: 'stats', visible: !!req.body.stats }
-    ],
-    theme: layoutDefaults.DEFAULT_THEME,
-    order: Array.isArray(req.body.order) ? req.body.order : layoutDefaults.DEFAULT_ORDER,
-    showButtonIcons: req.body.showButtonIcons === 'on'
+  const rawOrder = req.body['sectionOrder[]'];
+const allTypes = layoutDefaults.DEFAULT_SECTIONS.map(s => s.type);
+const postedOrder = Array.isArray(rawOrder) ? rawOrder : [];
+
+const sectionMap = new Map();
+allTypes.forEach(type => {
+  sectionMap.set(type, {
+    type,
+    visible: Object.prototype.hasOwnProperty.call(req.body, type),
+    premium: premiumTypes.includes(type)
   });
-  recordLayoutState({ userId, layout });
+});
+
+const orderedSections = postedOrder
+  .filter(type => sectionMap.has(type))
+  .map(type => sectionMap.get(type));
+
+// Append any missing types (not posted)
+const missingTypes = allTypes.filter(type => !postedOrder.includes(type));
+missingTypes.forEach(type => {
+  orderedSections.push(sectionMap.get(type));
+});
+
+const sections = orderedSections;
+
+
+
+  const updatedLayout = {
+    sections,
+    theme: {
+      ...layoutDefaults.DEFAULT_THEME,
+      ...(typeof req.body.theme === 'object' ? req.body.theme : {})
+    },
+    showButtonIcons: req.body.showButtonIcons === 'on'
+  };
 
   try {
-    await db.query(
-      'UPDATE users SET layout = $2 WHERE id = $1',
-      [userId, layout]
-    );
+    await db.query('UPDATE users SET layout = $2 WHERE id = $1', [userId, updatedLayout]);
 
     const { buttonOrder = [], buttonVisible = {}, iconOverrides = {} } = req.body;
 
@@ -129,5 +141,7 @@ router.post('/configure', requireAuth, async (req, res) => {
     res.status(500).send('Failed to save layout');
   }
 });
+
+
 
 export default router;

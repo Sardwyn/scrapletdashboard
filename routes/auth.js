@@ -38,7 +38,8 @@ router.post('/signup', async (req, res) => {
     req.session.user = {
       id: user.id,
       email,
-      username
+      username,
+      plam: user.plan
     };
 
     console.debug('Signup successful for:', email);

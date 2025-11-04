@@ -5,7 +5,7 @@ import ejs from 'ejs';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import session from 'express-session';
-
+import sponsorRoutes from './routes/sponsors.js';
 import dashboardRoutes from './routes/dashboard.js';
 import authRoutes from './routes/auth.js';
 import accountRoutes from './routes/account.js';
@@ -13,6 +13,7 @@ import publicRoutes from './routes/public.js';
 import profileRoutes from './routes/profile.js';
 import adminRoutes from './routes/admin.js';
 import db from './db.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -90,6 +91,7 @@ app.use('/account', accountRoutes);
 app.use('/', publicRoutes);
 app.use('/profile', profileRoutes);
 app.use('/admin', adminRoutes);
+app.use('/sponsors', sponsorRoutes);
 
 app.get('/dev-login', async (req, res) => {
   const userId = 4;

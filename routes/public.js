@@ -42,14 +42,13 @@ router.get('/u/:username', async (req, res) => {
 
   try {
     const userResult = await db.query(
-      `SELECT id, username, avatar_url, bio, x, youtube, twitch, kick, instagram, tiktok, facebook, layout
+      `SELECT id, username, avatar_url, bio, x, youtube, twitch, kick, instagram, tiktok, facebook, layout, plan
        FROM users
        WHERE username = $1`,
       [username]
     );
 
     const user = userResult.rows[0];
-
     if (!user) {
       recordProfileRequest({ username, status: 'not_found' });
       console.debug('User not found:', username);
@@ -57,8 +56,9 @@ router.get('/u/:username', async (req, res) => {
     }
 
     const layout = ensureLayout(user.layout);
-    const sectionVisibility = buildVisibilityMap(layout);
     recordLayoutState({ userId: user.id, layout });
+
+    const sectionVisibility = buildVisibilityMap(layout);
 
     const buttonsResult = await db.query(
       `SELECT id, label, url, visible, icon
@@ -78,6 +78,13 @@ router.get('/u/:username', async (req, res) => {
         }
         return button;
       });
+
+    const sponsorResult = await db.query(
+      'SELECT name, url, logo_url, banner_url FROM sponsors WHERE user_id = $1 ORDER BY created_at',
+      [user.id]
+    );
+
+    user.sponsors = sponsorResult.rows;
 
     let stats = {};
     let marketability = 'F';
@@ -103,6 +110,7 @@ router.get('/u/:username', async (req, res) => {
     recordProfileRequest({ userId: user.id, username, status: 'success' });
 
     res.render('public-profile', {
+      user: req.session.user,
       username,
       profile: user,
       layout,
