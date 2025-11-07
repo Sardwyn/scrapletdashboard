@@ -109,6 +109,12 @@ router.get('/u/:username', async (req, res) => {
     console.debug('layout.showButtonIcons:', layout.showButtonIcons);
     recordProfileRequest({ userId: user.id, username, status: 'success' });
 
+    await db.query(
+  `INSERT INTO profile_visits (user_id, visitor_ip, referrer)
+   VALUES ($1, $2, $3)`,
+  [user.id, req.ip, req.get('referer')]
+);
+
     res.render('public-profile', {
       user: req.session.user,
       username,

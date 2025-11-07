@@ -7,16 +7,22 @@
 </head>
 <body class="bg-gray-950 text-white font-sans px-6 py-10">
 
-  <% if (query.saved === 'true') { %>
-    <div class="max-w-3xl mx-auto mb-6">
+  <!-- Notices -->
+  <div class="max-w-3xl mx-auto space-y-3 mb-6">
+    <% if (query.saved === 'true') { %>
       <div class="bg-green-700 text-white px-4 py-2 rounded shadow">
-        ✅ Profile saved successfully!
+        ✅ Profile saved successfully.
       </div>
-    </div>
-  <% } %>
+    <% } %>
+    <% if (query.saved_intro) { %>
+      <div class="bg-green-700 text-white px-4 py-2 rounded shadow">
+        ✅ Introduction updated.
+      </div>
+    <% } %>
+  </div>
 
   <div class="max-w-3xl mx-auto px-6 py-10 bg-gray-900 rounded-xl shadow-lg border border-gray-800">
-    <!-- Header with Return Button -->
+    <!-- Header -->
     <div class="flex items-center justify-between mb-8">
       <h1 class="text-3xl font-bold text-white">Account Settings</h1>
       <a href="/dashboard"
@@ -24,7 +30,7 @@
         ← Return to Dashboard
       </a>
     </div>
-  
+
     <!-- Tabs -->
     <div class="flex space-x-6 border-b border-gray-700 mb-8 pb-2 text-sm font-medium">
       <a href="/account" class="text-blue-400 border-b-2 border-blue-400 pb-1">Bio</a>
@@ -32,70 +38,113 @@
       <a href="/account/customize" class="text-gray-400 hover:text-blue-400">Customize</a>
     </div>
 
-    <!-- Bio Form -->
+    <!-- BIO / AVATAR FORM -->
     <form action="/account/bio" method="POST" enctype="multipart/form-data" class="space-y-6">
-      <!-- Avatar Upload -->
+      <!-- Avatar -->
       <div>
-        <label class="block text-sm font-semibold mb-1 text-gray-300">Avatar</label>
-        <input type="file" name="avatar" class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
+        <label class="block text-sm font-semibold mb-1 text-gray-300" for="avatar">Avatar</label>
+        <input id="avatar" type="file" name="avatar" accept="image/*"
+               class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
+        <% if (profile.avatar_url) { %>
+          <div class="mt-2 flex items-center gap-3">
+            <img src="<%= profile.avatar_url %>" alt="Current avatar" class="w-12 h-12 rounded-full border border-gray-700 object-cover" />
+            <span class="text-xs text-gray-400">Current avatar</span>
+          </div>
+        <% } %>
       </div>
 
       <!-- Display Name -->
       <div>
-        <label class="block text-sm font-semibold mb-1 text-gray-300">Display Name</label>
-        <input type="text" name="display_name" value="<%= profile.display_name || '' %>" class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
+        <label class="block text-sm font-semibold mb-1 text-gray-300" for="display_name">Display Name</label>
+        <input id="display_name" type="text" name="display_name" value="<%= profile.display_name || '' %>"
+               class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
       </div>
 
       <!-- Bio -->
       <div>
-        <label class="block text-sm font-semibold mb-1 text-gray-300">Bio</label>
-        <textarea name="bio" rows="4" class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700"><%= profile.bio || '' %></textarea>
+        <label class="block text-sm font-semibold mb-1 text-gray-300" for="bio">Bio</label>
+        <textarea id="bio" name="bio" rows="4"
+                  class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700"><%= profile.bio || '' %></textarea>
       </div>
 
       <!-- Social Links -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-semibold mb-1 text-gray-300">X (formerly Twitter)</label>
+          <label class="block text-sm font-semibold mb-1 text-gray-300" for="x">X (formerly Twitter)</label>
           <div class="flex">
             <span class="bg-gray-800 px-3 py-2 rounded-l border border-gray-700 text-gray-400">https://x.com/</span>
-            <input type="text" name="x" placeholder="username" value="<%= profile.x || '' %>" class="bg-gray-800 text-white p-2 rounded-r w-full border-t border-r border-b border-gray-700" />
+            <input id="x" type="text" name="x" placeholder="username" value="<%= profile.x || '' %>"
+                   class="bg-gray-800 text-white p-2 rounded-r w-full border-t border-r border-b border-gray-700" />
           </div>
         </div>
 
         <div>
-          <label class="block text-sm font-semibold mb-1 text-gray-300">YouTube</label>
-          <input type="text" name="youtube" placeholder="YouTube URL" value="<%= profile.youtube || '' %>" class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
+          <label class="block text-sm font-semibold mb-1 text-gray-300" for="youtube">YouTube</label>
+          <input id="youtube" type="url" name="youtube" placeholder="YouTube URL" value="<%= profile.youtube || '' %>"
+                 class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
         </div>
 
         <div>
-          <label class="block text-sm font-semibold mb-1 text-gray-300">Twitch</label>
-          <input type="text" name="twitch" placeholder="Twitch URL" value="<%= profile.twitch || '' %>" class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
+          <label class="block text-sm font-semibold mb-1 text-gray-300" for="twitch">Twitch</label>
+          <input id="twitch" type="url" name="twitch" placeholder="Twitch URL" value="<%= profile.twitch || '' %>"
+                 class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
         </div>
       </div>
 
       <!-- Submit -->
-      <div class="pt-6">
+      <div class="pt-2">
         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow">
           Save Bio
         </button>
       </div>
     </form>
 
-    <!-- Custom Buttons -->
+    <!-- CREATOR INTRODUCTION (separate form) -->
+    <div class="bg-gray-900 mt-10 p-6 rounded-xl border border-gray-800">
+      <h2 class="text-xl font-semibold mb-2">Creator Introduction</h2>
+      <p class="text-sm text-gray-400 mb-4">
+        This blurb appears in your Pitch Deck PDF. Keep it concise, sponsor-facing, and personal.
+      </p>
+
+      <form action="/account/intro" method="POST" class="space-y-4">
+        <textarea
+          name="custom_intro"
+          rows="6"
+          maxlength="4000"
+          class="w-full bg-gray-800 text-gray-100 p-3 rounded border border-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+          placeholder="Example: I’m a UK-based Kick + Twitch creator focused on FPS streams. My audience skews 18–34 and is highly engaged with PC gaming brands..."
+        ><%= profile.custom_intro || '' %></textarea>
+
+        <div class="flex items-center gap-3">
+          <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded shadow">
+            Save Introduction
+          </button>
+          <% if (query.saved_intro) { %>
+            <span class="text-green-400 text-sm">Saved.</span>
+          <% } %>
+        </div>
+      </form>
+    </div>
+
+    <!-- CUSTOM BUTTONS -->
     <div class="mt-12">
       <h2 class="text-xl font-bold mb-4 text-white">Custom Buttons</h2>
-      <p class="text-sm text-gray-400 mb-6">Add links to your store, portfolio, or anything else. Free tier allows 3 buttons. Pro users get unlimited.</p>
+      <p class="text-sm text-gray-400 mb-6">
+        Add links to your store, portfolio, or anything else. Free tier allows 3 buttons. Pro users get unlimited.
+      </p>
 
-      <!-- Add Button Form -->
+      <!-- Add Button -->
       <form method="POST" action="/account/buttons" class="space-y-4 mb-8">
         <div>
-          <label class="block text-sm font-semibold mb-1 text-gray-300">Button Label</label>
-          <input type="text" name="label" placeholder="e.g. Portfolio" required class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
+          <label class="block text-sm font-semibold mb-1 text-gray-300" for="btn-label">Button Label</label>
+          <input id="btn-label" type="text" name="label" placeholder="e.g. Portfolio" required
+                 class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
         </div>
 
         <div>
-          <label class="block text-sm font-semibold mb-1 text-gray-300">Destination URL</label>
-          <input type="url" name="url" placeholder="https://example.com" required class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
+          <label class="block text-sm font-semibold mb-1 text-gray-300" for="btn-url">Destination URL</label>
+          <input id="btn-url" type="url" name="url" placeholder="https://example.com" required
+                 class="bg-gray-800 text-white p-2 rounded w-full border border-gray-700" />
         </div>
 
         <div class="pt-2">
@@ -105,28 +154,43 @@
         </div>
       </form>
 
-      <!-- Editable Button List -->
+      <!-- Existing Buttons -->
       <div class="space-y-4">
         <% customButtons.forEach(btn => { %>
-          <form method="POST" action="/account/buttons/<%= btn.id %>/update" class="space-y-2 bg-gray-800 p-4 rounded-lg border border-gray-700">
-            <div>
-              <label class="block text-sm font-semibold mb-1 text-gray-300">Label</label>
-              <input type="text" name="label" value="<%= btn.label %>" class="bg-gray-900 text-white p-2 rounded w-full border border-gray-600" />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-1 text-gray-300">URL</label>
-              <input type="url" name="url" value="<%= btn.url %>" class="bg-gray-900 text-white p-2 rounded w-full border border-gray-600" />
-            </div>
-            <div class="flex justify-between items-center pt-2">
-              <button type="submit" class="text-blue-400 hover:underline text-sm">💾 Save</button>
-              <div class="flex space-x-3">
-                </form>
-                <form method="POST" action="/account/buttons/<%= btn.id %>/delete">
-                  <button class="text-red-400 hover:underline text-sm">Delete</button>
+          <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+            <!-- Update form -->
+            <form method="POST" action="/account/buttons/<%= btn.id %>/update" class="space-y-2">
+              <div>
+                <label class="block text-sm font-semibold mb-1 text-gray-300" for="label-<%= btn.id %>">Label</label>
+                <input id="label-<%= btn.id %>" type="text" name="label" value="<%= btn.label %>"
+                       class="bg-gray-900 text-white p-2 rounded w-full border border-gray-600" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1 text-gray-300" for="url-<%= btn.id %>">URL</label>
+                <input id="url-<%= btn.id %>" type="url" name="url" value="<%= btn.url %>"
+                       class="bg-gray-900 text-white p-2 rounded w-full border border-gray-600" />
+              </div>
+
+              <div class="flex justify-between items-center pt-2">
+                <button type="submit" class="text-blue-400 hover:underline text-sm">💾 Save</button>
+
+                <!-- Separate delete form -->
+                <form method="POST" action="/account/buttons/<%= btn.id %>/delete" class="inline">
+                  <button class="text-red-400 hover:underline text-sm" type="submit">Delete</button>
                 </form>
               </div>
+            </form>
+
+            <!-- Preview -->
+            <div class="mt-3">
+              <span class="text-xs text-gray-400">Preview:</span>
+              <a href="<%= btn.url %>" data-track="<%= btn.data_track %>"
+                 class="inline-block mt-1 px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm shadow">
+                <%= btn.label %>
+              </a>
+              <p class="text-xs text-gray-500 mt-1">Tracking label: <%= btn.data_track %></p>
             </div>
-          </form>
+          </div>
         <% }) %>
       </div>
     </div>

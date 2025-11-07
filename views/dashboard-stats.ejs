@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Stats Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>a:hover { transition: color 0.2s ease-in-out; }</style>
+</head>
+
+<body class="bg-gray-950 text-white min-h-screen font-sans">
+
+  <!-- Unified Dashboard Header -->
+  <header class="bg-gray-900 border-b border-gray-800 text-gray-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="text-2xl font-bold text-indigo-400 tracking-wide">
+        Scraplet<span class="text-indigo-200">Dashboard</span>
+      </div>
+
+      <!-- Nav -->
+      <nav class="flex flex-wrap items-center gap-4 text-sm">
+        <a href="/dashboard" class="text-gray-300 hover:text-indigo-300">Overview</a>
+        <a href="/dashboard/stats" class="text-indigo-400">Stats</a>
+        <a href="/dashboard/widgets" class="text-gray-300 hover:text-indigo-300">Widgets</a>
+        <a href="/dashboard/account" class="text-gray-300 hover:text-indigo-300">Account</a>
+        <% if (user?.isAdmin) { %>
+          <a href="/dashboard/admin" class="text-gray-300 hover:text-indigo-300">Admin</a>
+        <% } %>
+      </nav>
+
+      <div class="flex items-center gap-3 text-sm">
+        <span class="text-gray-400">Hi, <%= user.username %></span>
+        <a href="/logout" class="text-gray-400 hover:text-red-400">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="px-4 sm:px-6 md:px-8 py-8 sm:py-10">
+    <div class="max-w-6xl mx-auto space-y-10">
+
+      <!-- Page Title + Button -->
+      <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-white">Your Stats Dashboard</h1>
+          <p class="text-sm text-gray-400 mt-1">
+            Metrics pulled from your public profile and integrations
+          </p>
+        </div>
+
+        <a href="/dashboard/pitchdeck.pdf"
+           class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded shadow w-full sm:w-auto text-center">
+           📄 Generate Pitch Deck
+        </a>
+      </header>
+
+      <!-- 🧭 Platform Summary -->
+      <section>
+        <div class="bg-gray-900 p-5 sm:p-6 rounded-lg shadow border border-gray-800">
+          <h2 class="text-lg sm:text-xl font-semibold mb-4 text-indigo-300">📊 Platform Performance</h2>
+
+          <% if (!stats || stats.length === 0) { %>
+            <p class="text-gray-500 italic">No platform data yet.</p>
+          <% } else { %>
+            <div class="overflow-x-auto rounded-md border border-gray-700">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-800 text-gray-300">
+                  <tr>
+                    <th class="text-left px-4 py-2">Platform</th>
+                    <th class="text-right px-4 py-2">Followers</th>
+                    <th class="text-right px-4 py-2">Engagement</th>
+                    <th class="text-right px-4 py-2">CCV</th>
+                    <th class="text-right px-4 py-2">7d Trend</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% stats.forEach(stat => {
+                       const trend = (weeklyTrends || []).find(t => t.platform === stat.platform);
+                       const delta = trend ? trend.deltaPct : 0;
+                  %>
+                    <tr class="border-t border-gray-800">
+                      <td class="px-4 py-2 capitalize"><%= stat.platform %></td>
+                      <td class="px-4 py-2 text-right text-green-400 font-mono"><%= stat.followers %></td>
+                      <td class="px-4 py-2 text-right text-yellow-400 font-mono"><%= stat.engagement %></td>
+                      <td class="px-4 py-2 text-right text-blue-400 font-mono"><%= stat.ccv %></td>
+                      <td class="px-4 py-2 text-right">
+                        <% if (delta > 0) { %>
+                          <span class="text-green-400 font-semibold">▲ <%= delta.toFixed(1) %>%</span>
+                        <% } else if (delta < 0) { %>
+                          <span class="text-red-400 font-semibold">▼ <%= Math.abs(delta).toFixed(1) %>%</span>
+                        <% } else { %>
+                          <span class="text-gray-400">—</span>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </section>
+
+      <!-- Profile Engagement -->
+      <section>
+        <div class="bg-gray-900 p-5 sm:p-6 rounded-lg shadow border border-gray-800">
+          <h2 class="text-lg sm:text-xl font-semibold mb-4 text-indigo-300">📈 Profile Engagement</h2>
+
+          <!-- Window toggle -->
+          <div class="flex flex-wrap items-center justify-end -mt-1 mb-3 gap-2 text-sm">
+            <button data-window="7" class="winbtn px-3 py-1 rounded border border-gray-700 <%= selectedWindow===7 ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800' %>">7d</button>
+            <button data-window="30" class="winbtn px-3 py-1 rounded border border-gray-700 <%= selectedWindow===30 ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800' %>">30d</button>
+            <button data-window="60" class="winbtn px-3 py-1 rounded border border-gray-700 <%= selectedWindow===60 ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800' %>">60d</button>
+          </div>
+
+          <!-- Metrics -->
+          <div class="space-y-4 text-sm">
+            <div class="flex justify-between">
+              <span>Total Views (<span id="headline-window"><%= selectedWindow %></span>d)</span>
+              <span id="headline-views" class="font-semibold"><%= profileAnalytics.views %></span>
+            </div>
+
+            <% if (referrerStats && referrerStats.length) { %>
+              <div>
+                <p class="text-gray-400 mb-1">Top Referrers</p>
+                <ul class="space-y-1">
+                  <% referrerStats.forEach(({ referrer, count }) => { %>
+                    <li class="flex justify-between">
+                      <span><%= referrer || 'Direct / Unknown' %></span>
+                      <span class="text-gray-300"><%= count %></span>
+                    </li>
+                  <% }) %>
+                </ul>
+              </div>
+            <% } %>
+          </div>
+
+          <!-- Line Graph -->
+          <div class="mt-6 relative h-[160px] sm:h-[200px] md:h-[240px]">
+            <div id="chart-loading"
+                 class="absolute inset-0 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-20">
+              <div class="w-8 h-8 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+
+            <canvas id="engagementChart" class="absolute inset-0 w-full h-full"></canvas>
+
+            <p class="text-xs text-gray-500 mt-2 relative z-10">
+              <span id="pct-arrow"><%= profileEngagementTrend.percentChange >= 0 ? '📈' : '📉' %></span>
+              <span id="pct-value" class="<%= profileEngagementTrend.percentChange >= 0 ? 'text-green-400' : 'text-red-400' %> font-semibold">
+                <%= Math.abs(profileEngagementTrend.percentChange).toFixed(1) %>%</span>
+              compared to previous <span id="caption-window"><%= selectedWindow %></span>d
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 🧭 Internal Engagement -->
+      <section>
+        <div class="bg-gray-900 p-5 sm:p-6 rounded-lg shadow border border-gray-800">
+          <h2 class="text-lg sm:text-xl font-semibold mb-4 text-indigo-300">🧭 Internal Engagement</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 class="text-base sm:text-lg font-semibold mb-2">Profile Heatmap</h3>
+              <div id="heatmap-container" class="relative w-full h-64 sm:h-72 md:h-80 bg-gray-800 rounded-md overflow-hidden border border-gray-700">
+                <svg id="heatmap" class="absolute inset-0 w-full h-full"></svg>
+              </div>
+              <p class="text-xs text-gray-500 mt-2">Clicks recorded on your public profile</p>
+            </div>
+
+            <div>
+              <h3 class="text-base sm:text-lg font-semibold mb-2">Click Buckets</h3>
+              <div class="space-y-2">
+                <% (Array.isArray(clickBuckets) ? clickBuckets : []).forEach(c => { %>
+                  <div class="flex justify-between">
+                    <span><%= c.action %></span>
+                    <span class="font-semibold"><%= c.count %></span>
+                  </div>
+                <% }) %>
+                <% if (!clickBuckets || clickBuckets.length === 0) { %>
+                  <p class="text-gray-500 italic">No click bucket data.</p>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 🖱️ Clickstream Details -->
+      <section>
+        <div class="bg-gray-900 p-5 sm:p-6 rounded-lg shadow border border-gray-800">
+          <h2 class="text-lg sm:text-xl font-semibold mb-4 text-indigo-300">🖱️ Clickstream Analysis</h2>
+          <% if (Array.isArray(clickDetails) && clickDetails.length) { %>
+            <ul class="text-sm text-white space-y-2">
+              <% clickDetails.forEach(({ action, referrer, timestamp }) => { %>
+                <li class="flex justify-between flex-wrap gap-1">
+                  <span><%= action %></span>
+                  <span class="text-gray-400 text-xs text-right">
+                    <%= new Date(timestamp).toLocaleString() %>
+                    <% if (referrer) { %> · <%= referrer %> <% } %>
+                  </span>
+                </li>
+              <% }) %>
+            </ul>
+          <% } else { %>
+            <p class="text-gray-500 italic">No clickstream data yet.</p>
+          <% } %>
+        </div>
+      </section>
+
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <script>
+        window.HEATMAP_POINTS = <%- JSON.stringify(heatmapPoints || []) %>;
+      </script>
+
+      <!-- Chart logic and heatmap renderer preserved -->
+      <script>
+      (function() {
+        const btns = Array.from(document.querySelectorAll('.winbtn'));
+        const headlineViews = document.getElementById('headline-views');
+        const headlineWindow = document.getElementById('headline-window');
+        const captionWindow = document.getElementById('caption-window');
+        const pctArrow = document.getElementById('pct-arrow');
+        const pctValue = document.getElementById('pct-value');
+        const ctx = document.getElementById('engagementChart')?.getContext('2d');
+        const overlay = document.getElementById('chart-loading');
+        if (!ctx) return;
+
+        const grad = ctx.createLinearGradient(0,0,0,240);
+        grad.addColorStop(0,'rgba(99,102,241,0.35)');
+        grad.addColorStop(1,'rgba(99,102,241,0.05)');
+        const initial = <%- JSON.stringify(profileEngagementTrend.dailyViews || []) %>;
+
+        const CHART = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: initial.map(d=>d.date),
+            datasets:[{
+              label:'Profile Views',
+              data:initial.map(d=>d.count),
+              borderColor:'rgba(99,102,241,1)',
+              backgroundColor:grad,fill:true,pointRadius:2,tension:0.35
+            }]
+          },
+          options:{
+            responsive:true,
+            maintainAspectRatio:false,
+            scales:{
+              x:{ticks:{color:'#9ca3af',maxRotation:0},grid:{color:'#111827'}},
+              y:{ticks:{color:'#9ca3af'},grid:{color:'#111827'},beginAtZero:true,grace:'5%'}
+            },
+            plugins:{legend:{display:false}}
+          }
+        });
+
+        const fmt = n => (n>=1000?n.toLocaleString():String(n));
+        async function loadWindow(win){
+          overlay.style.opacity='1';
+          btns.forEach(b=>b.disabled=true);
+          try{
+            const resp=await fetch(`/dashboard/api/stats/engagement?window=${win}`);
+            const json=await resp.json();
+            headlineWindow.textContent=json.windowDays;
+            captionWindow.textContent=json.windowDays;
+            headlineViews.textContent=fmt(json.totalViews);
+            const up=json.percentChange>=0;
+            pctArrow.textContent=up?'📈':'📉';
+            pctValue.textContent=Math.abs(json.percentChange).toFixed(1)+'%';
+            pctValue.classList.toggle('text-green-400',up);
+            pctValue.classList.toggle('text-red-400',!up);
+            CHART.data.labels=json.labels;
+            CHART.data.datasets[0].data=json.values;
+            CHART.update();
+            btns.forEach(b=>{
+              const active=Number(b.dataset.window)===json.windowDays;
+              b.classList.toggle('bg-indigo-600',active);
+              b.classList.toggle('text-white',active);
+              b.classList.toggle('text-gray-300',!active);
+            });
+            const url=new URL(window.location.href);
+            url.searchParams.set('window',json.windowDays);
+            history.replaceState({},'',url);
+          }catch(e){console.error('Failed to load engagement window:',e);}
+          finally{
+            overlay.style.opacity='0';
+            btns.forEach(b=>b.disabled=false);
+          }
+        }
+        btns.forEach(b=>b.addEventListener('click',()=>loadWindow(Number(b.dataset.window))));
+      })();
+
+      document.addEventListener('DOMContentLoaded',()=>{
+        const pts=window.HEATMAP_POINTS||[];
+        const svg=document.getElementById('heatmap');
+        if(!svg||!pts.length)return;
+        const w=svg.clientWidth||svg.parentElement.clientWidth;
+        const h=svg.clientHeight||svg.parentElement.clientHeight;
+        while(svg.firstChild)svg.removeChild(svg.firstChild);
+        pts.forEach(({x,y,weight=1})=>{
+          const cx=Math.max(4,Math.min(w-4,Math.round(x*w)));
+          const cy=Math.max(4,Math.min(h-4,Math.round(y*h)));
+          const r=2+Math.min(8,weight);
+          const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+          c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',r);
+          c.setAttribute('fill','rgba(79,70,229,0.55)');
+          c.setAttribute('stroke','rgba(99,102,241,0.9)');
+          c.setAttribute('stroke-width','1');
+          svg.appendChild(c);
+        });
+      });
+      </script>
+    </div>
+  </main>
+</body>
+</html>

@@ -44,7 +44,7 @@
       <h1 class="text-2xl font-bold"><%= profile.display_name || username %></h1>
       <% if (profile.business_email) { %>
         <p class="text-blue-400 hover:underline">
-          <a href="mailto:<%= profile.business_email %>"><%= profile.business_email %></a>
+          <a href="mailto:<%= profile.business_email %>" class="trackable" data-track="email-link"><%= profile.business_email %></a>
         </p>
       <% } %>
     </div>
@@ -52,10 +52,8 @@
 
   <!-- Dynamic Section Rendering -->
   <% layout.sections.forEach(section => {
-  const { type } = section;
-
+    const { type } = section;
     if (section?.visible && (!section.premium || profile.plan === 'pro')) {
-
   %>
     <div class="mb-6">
       <% if (type === 'stats') { %>
@@ -102,13 +100,13 @@
       <% } else if (type === 'socialLinks') { %>
         <div class="flex justify-center space-x-6">
           <% if (profile.x) { %>
-            <a href="https://x.com/<%= profile.x %>" target="_blank" class="text-blue-400 hover:underline">X</a>
+            <a href="https://x.com/<%= profile.x %>" target="_blank" class="text-blue-400 hover:underline trackable" data-track="x-link">X</a>
           <% } %>
           <% if (profile.youtube) { %>
-            <a href="<%= profile.youtube %>" class="text-red-400 hover:underline">YouTube</a>
+            <a href="<%= profile.youtube %>" class="text-red-400 hover:underline trackable" data-track="youtube-link">YouTube</a>
           <% } %>
           <% if (profile.twitch) { %>
-            <a href="<%= profile.twitch %>" class="text-purple-400 hover:underline">Twitch</a>
+            <a href="<%= profile.twitch %>" class="text-purple-400 hover:underline trackable" data-track="twitch-link">Twitch</a>
           <% } %>
         </div>
 
@@ -118,11 +116,11 @@
             <% profile.sponsors.forEach(s => { %>
               <div class="bg-gray-800 rounded-xl shadow border border-gray-700 overflow-hidden">
                 <% if (s.banner_url) { %>
-                  <a href="<%= s.url %>" target="_blank">
+                  <a href="<%= s.url %>" class="trackable" target="_blank" data-track="sponsor-banner:<%= s.name %>">
                     <img src="<%= s.banner_url %>" alt="<%= s.name %> banner" class="w-full h-40 object-cover" />
                   </a>
                 <% } else { %>
-                  <a href="<%= s.url %>" target="_blank" class="flex items-center gap-3 px-4 py-3 hover:bg-gray-700 transition">
+                  <a href="<%= s.url %>" class="trackable" target="_blank" class="flex items-center gap-3 px-4 py-3 hover:bg-gray-700 transition" data-track="sponsor-link:<%= s.name %>">
                     <% if (s.logo_url) { %>
                       <img src="<%= s.logo_url %>" alt="<%= s.name %>" class="h-6 w-auto max-w-[120px] object-contain" />
                     <% } %>
@@ -169,7 +167,7 @@
   <% if (customButtons.length > 0) { %>
     <div class="mt-6 space-y-4">
       <% customButtons.forEach(btn => { %>
-        <a href="<%= btn.url %>" target="_blank" class="flex items-center justify-center gap-3 bg-blue-600 text-white p-4 rounded-lg text-lg font-semibold shadow hover:bg-blue-700">
+        <a href="<%= btn.url %>" target="_blank" class="trackable flex items-center justify-center gap-3 bg-blue-600 text-white p-4 rounded-lg text-lg font-semibold shadow hover:bg-blue-700" data-track="custom-button:<%= btn.label %>">
           <% if (layout.showButtonIcons && btn.icon) { %>
             <img src="/icons/<%= btn.icon || 'default' %>.svg" alt="<%= btn.label %> icon" class="w-5 h-5" />
           <% } %>
@@ -178,7 +176,41 @@
       <% }) %>
     </div>
   <% } %>
+  <% console.log('user:', user); %>
+<% console.log('profile:', profile); %>
+
 
 </div>
+
+<script>
+  const userId = <%= JSON.stringify(profile.id) %>;
+
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-track]').forEach(el => {
+      el.addEventListener('click', () => {
+        const action = el.dataset.track;
+        const referrer = document.referrer || 'direct';
+        const timestamp = Date.now();
+
+        fetch('/track-click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, action, referrer, timestamp })
+        });
+      });
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    fetch('/track-heatmap', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, x: e.clientX, y: e.clientY })
+    });
+  });
+</script>
+
 </body>
 </html>
+

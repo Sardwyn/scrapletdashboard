@@ -5,6 +5,7 @@ import db from '../db.js';
 import validator from 'validator';
 import { prepareUploadDirectory } from '../services/uploads.js';
 import requireAuth from '../utils/requireAuth.js';
+import { generateDataTrack } from '../utils/generateDataTrack.js';
 
 const router = express.Router();
 
@@ -23,7 +24,11 @@ const upload = multer({ dest: join(uploadRoot) });
 // Account overview
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const result = await db.query('SELECT * FROM users WHERE id = $1', [req.session.user.id]);
+    const result = await db.query(
+  'SELECT id, username, plan, display_name, bio, avatar_url, x, youtube, twitch, tags, custom_intro FROM users WHERE id = $1',
+  [req.session.user.id]
+);
+
     const profile = result.rows[0] || {};
 
     const buttonsResult = await db.query(
@@ -57,7 +62,8 @@ router.post('/bio', requireAuth, upload.single('avatar'), async (req, res) => {
       : tags.split(',').map(t => t.trim()).filter(Boolean);
   }
 
-  try {
+  try { 
+    // Update user profile
     await db.query(
       `
       UPDATE users
@@ -74,12 +80,63 @@ router.post('/bio', requireAuth, upload.single('avatar'), async (req, res) => {
       [avatar_url, display_name, bio, x, youtube, twitch, tagsArray, userId]
     );
 
+    // Ensure stats rows exist for each platform
+    const platforms = [
+      { key: 'x', value: x },
+      { key: 'youtube', value: youtube },
+      { key: 'twitch', value: twitch }
+    ];
+
+    for (const { key, value } of platforms) {
+      if (value && validator.isURL(value, { require_protocol: true })) {
+        await db.query(
+          `INSERT INTO stats (user_id, platform)
+           SELECT $1, $2
+           WHERE NOT EXISTS (
+             SELECT 1 FROM stats WHERE user_id = $1 AND platform = $2
+           )`,
+          [userId, key]
+        );
+      }
+    }
+
     res.redirect(onboarding ? '/dashboard?welcome=true' : '/account?saved=true');
   } catch (err) {
     console.error('Profile save error:', err);
     res.status(500).send('Failed to save profile');
   }
 });
+
+// Save custom introduction (used in pitch deck)
+router.post('/intro', requireAuth, async (req, res) => {
+  const userId = req.session.user.id;
+  let { custom_intro } = req.body;
+
+  try {
+    if (typeof custom_intro !== 'string') custom_intro = '';
+    custom_intro = custom_intro.trim();
+
+    // Sanitise & limit
+    const MAX_LEN = 4000;
+    if (custom_intro.length > MAX_LEN) {
+      custom_intro = custom_intro.slice(0, MAX_LEN);
+    }
+    custom_intro = custom_intro.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    await db.query('UPDATE users SET custom_intro = $1 WHERE id = $2', [
+      custom_intro,
+      userId
+    ]);
+
+    req.session.user.custom_intro = custom_intro; // keep session in sync
+    res.redirect('/account?saved_intro=1');
+  } catch (err) {
+    console.error('Failed to save custom intro:', err);
+    res.status(500).send('Failed to save introduction');
+  }
+});
+
+
 
 // Add button
 router.post('/buttons', requireAuth, async (req, res) => {
@@ -101,10 +158,14 @@ router.post('/buttons', requireAuth, async (req, res) => {
     return res.status(403).send('Upgrade to Pro to add more buttons');
   }
 
-  await db.query(
-    'INSERT INTO custom_buttons (user_id, label, url) VALUES ($1, $2, $3)',
-    [userId, label, url]
-  );
+  const dataTrack = generateDataTrack(label, url);
+
+await db.query(
+  'UPDATE custom_buttons SET label = $1, url = $2, data_track = $3 WHERE id = $4 AND user_id = $5',
+  [label, url, dataTrack, id, req.session.user.id]
+);
+
+
   res.redirect('/account');
 });
 
