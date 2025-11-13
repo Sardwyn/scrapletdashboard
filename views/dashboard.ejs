@@ -1,24 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
+
   <title>Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
-</head>
+
 
 <body class="bg-gray-950 text-white font-sans px-8 py-10 relative">
-
-  <!-- Top bar with logout -->
-  <div class="absolute top-6 right-8 flex gap-3">
-    <a href="/dashboard/metrics" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded shadow-md transition">
-      Metrics
-    </a>
-    <form action="/auth/logout" method="POST">
-      <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow-md transition">
-        Log Out
-      </button>
-    </form>
-  </div>
 
   <h1 class="text-4xl font-bold mb-10">Welcome, <%= user.username %></h1>
 
@@ -50,6 +35,46 @@
       <a href="/account" class="text-blue-400 hover:underline">View Account →</a>
     </div>
   </div>
+
+    <!-- Platform Connections -->
+  <div class="grid grid-cols-4 gap-4 mb-8">
+    <!-- Kick Connect -->
+    <div class="bg-gray-900 p-4 rounded-xl shadow-md border border-gray-800">
+      <h2 class="text-lg font-semibold mb-1">Kick</h2>
+      <% if (kickAccount) { %>
+        <p class="text-green-400 text-sm mb-2">
+          Connected as @<%= kickAccount.username %>
+        </p>
+        <p class="text-gray-400 text-xs mb-3">
+          Make sure <span class="font-mono">Scrapbot</span> is added as a moderator in your Kick channel settings.
+        </p>
+      <% } else { %>
+        <p class="text-gray-400 text-sm mb-3">
+          Connect your Kick channel to unlock chat widgets and analytics.
+        </p>
+        <a href="/account/connect/kick"
+           class="inline-block bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded">
+          Connect Kick / Invite Scrapbot
+        </a>
+      <% } %>
+    </div>
+
+    <!-- Future stubs – YouTube / Twitch / X -->
+    <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 opacity-60">
+      <h2 class="text-lg font-semibold mb-1">YouTube</h2>
+      <p class="text-gray-500 text-sm">Coming later.</p>
+    </div>
+    <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 opacity-60">
+      <h2 class="text-lg font-semibold mb-1">Twitch</h2>
+      <p class="text-gray-500 text-sm">Coming later.</p>
+    </div>
+    <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 opacity-60">
+      <h2 class="text-lg font-semibold mb-1">X</h2>
+      <p class="text-gray-500 text-sm">Coming later.</p>
+    </div>
+  </div>
+
+
 
   <!-- Public Profile Card -->
   <div class="bg-gray-900 p-6 rounded-xl shadow-md hover:shadow-lg transition border border-gray-800 mb-12">
@@ -168,6 +193,3 @@
       }
     }
   </script>
-
-</body>
-</html>

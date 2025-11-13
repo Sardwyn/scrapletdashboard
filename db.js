@@ -1,24 +1,29 @@
-import { Pool } from 'pg';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+// /db.js
+import pg from 'pg';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Lazy init so dotenv in index.js has time to run
+let pool = null;
 
-dotenv.config({ path: path.join(__dirname, '.env') });
+function redact(s = '') {
+  return s.replace(/(:\/\/[^:]+:)([^@]+)@/, '$1***@');
+}
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+function getConnString() {
+  return process.env.DASHBOARD_DATABASE_URL || process.env.DATABASE_URL || '';
+}
 
-// 🔍 Log every query for debugging
-const originalQuery = pool.query.bind(pool);
-pool.query = async (...args) => {
-  const [sql, params] = args;
-  console.debug('🧠 Executing query:', sql);
-  console.debug('📦 With params:', params);
-  return originalQuery(...args);
-};
+export function getPool() {
+  if (!pool) {
+    const cs = getConnString();
+    if (!cs) throw new Error('DATABASE_URL not set (checked DASHBOARD_DATABASE_URL, DATABASE_URL)');
+    console.log('🧠 DB config:', redact(cs));
+    pool = new pg.Pool({ connectionString: cs, ssl: false });
+  }
+  return pool;
+}
 
-export default pool;
+export async function query(sql, params) {
+  return getPool().query(sql, params);
+}
+
+export default { query };

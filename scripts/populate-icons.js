@@ -23,19 +23,26 @@ const domainMap = {
   'epic-games': 'epicgames.com'
 };
 
-const icons = fs.readdirSync('/usr/share/nginx/icons/').filter(f => f.endsWith('.svg'));
+async function populateIcons() {
+  const icons = fs.readdirSync('/usr/share/nginx/icons/').filter(f => f.endsWith('.svg'));
 
-for (const file of icons) {
-  const icon = path.basename(file, '.svg');
-  const name = icon.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  const domain = domainMap[icon] || null;
+  for (const file of icons) {
+    const icon = path.basename(file, '.svg');
+    const name = icon.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const domain = domainMap[icon] || null;
 
-  if (!domain) continue;
+    if (!domain) continue;
 
-  await db.query(
-    'INSERT INTO platform_icons (name, icon, domain) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
-    [name, icon, domain]
-  );
-
-  console.log(`✅ Inserted: ${name} (${icon}) → ${domain}`);
+    try {
+      await db.query(
+        'INSERT INTO platform_icons (name, icon, domain) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+        [name, icon, domain]
+      );
+      console.log(`✅ Inserted: ${name} (${icon}) → ${domain}`);
+    } catch (err) {
+      console.error(`❌ Failed to insert ${icon}:`, err.message);
+    }
+  }
 }
+
+populateIcons();

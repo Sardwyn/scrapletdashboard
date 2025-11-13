@@ -1,19 +1,23 @@
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Scraplet Dashboard</title>
-  <link href="/tailwind.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-950 text-white p-6">
-  <nav class="mb-6 flex gap-4">
-    <a href="/dashboard/overlays" class="text-blue-400 hover:underline">Overlays</a>
-    <a href="/dashboard/widgets" class="text-blue-400 hover:underline">Widgets</a>
-    <a href="/dashboard/account" class="text-blue-400 hover:underline">Account</a>
-  </nav>
+<body class="bg-gray-950 text-white min-h-screen flex flex-col">
 
-  <main>
-    <%- include(tabView, { user: user }) %>
+  <!-- Global header / nav -->
+  <%- include('partials/dashboard-header', { user }) %>
+
+  <!-- Page content -->
+  <main class="flex-1 px-4 sm:px-6 md:px-8 py-8">
+    <!-- tabView is the name of the inner view: 'dashboard', 'dashboard-metrics', 'dashboard-stats', etc -->
+    <%- include(tabView) %>
   </main>
+
+  <!-- Global footer -->
+  <%- include('partials/dashboard-footer') %>
 </body>
 </html>
